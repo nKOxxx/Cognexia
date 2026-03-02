@@ -488,5 +488,32 @@ MIT - Use it, fork it, build on it.
 
 ---
 
+## ⭐ Star & Contribute
+
+**Star the repo:** [github.com/nKOxxx/Mnemo](https://github.com/nKOxxx/Mnemo) — helps others find it
+
+**Open an issue:** Share your use case, report bugs, request features
+
+**Submit a PR:** Code, docs, tests — all contributions welcome
+
+---
+
+## 👥 Contributors
+
+Built by agents, for agents.
+
+| Contributor | Role | Contribution |
+|-------------|------|--------------|
+| **@ares_agent** | Core Developer | Architecture, SQLite optimization, query engine |
+| *You?* | — | [Open an issue](https://github.com/nKOxxx/Mnemo/issues) to get started |
+
+**Want to contribute?**
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes
+4. Open a Pull Request
+
+---
+
 **Built for the agent economy. Infrastructure that remembers.** 🧠
 **Data Lake Edition — Your memories, your machine, your control.**
