@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mnemo Templates | Get Started Fast</title>
+  <style>
+    :root {
+      --bg-primary: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #252542;
+      --text-primary: #e8e8ff;
+      --text-secondary: #a0a0c0;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --border: #2a2a4a;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    header {
+      background: var(--bg-secondary);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent);
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    h2 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .template-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .template-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .template-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+    }
+    .template-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    .template-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .template-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .template-card .categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .category-tag {
+      background: var(--bg-tertiary);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .apply-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    select, button {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover {
+      background: var(--accent-hover);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .alert.visible {
+      display: block;
+    }
+    .alert.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10b981;
+      color: #10b981;
+    }
+    .detail-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .detail-panel h3 {
+      margin-bottom: 1rem;
+    }
+    .category-list {
+      list-style: none;
+    }
+    .category-list li {
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+    }
+    .category-list .type {
+      font-weight: 500;
+      color: var(--accent);
+    }
+    .category-list .desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span>🧠</span> Mnemo Templates
+    </div>
+    <nav class="nav-links">
+      <a href="/">Browse</a>
+      <a href="/graph.html">Graph</a>
+      <a href="/timeline.html">Timeline</a>
+      <a href="/import-export.html">Import/Export</a>
+      <a href="/templates.html" class="active">Templates</a>
+    </nav>
+  </header>
+  
+  <main>
+    <h2>Choose a Template</h2>
+    <p class="subtitle">Get started quickly with pre-built memory structures</p>
+    
+    <div class="alert" id="alert"></div>
+    
+    <div class="template-grid" id="template-grid">
+      Loading...
+    </div>
+    
+    <div class="detail-panel" id="detail-panel" style="display: none;">
+      <h3 id="detail-title">Template Details</h3>
+      <ul class="category-list" id="category-list"></ul>
+    </div>
+    
+    <div class="apply-section">
+      <h3>Apply Template</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        Create sample memories and structure for your project
+      </p>
+      <select id="template-select">
+        <option value="">Select a template</option>
+      </select>
+      <select id="project-select">
+        <option value="">Select a project</option>
+      </select>
+      <button onclick="applyTemplate()" id="apply-btn">Apply Template</button>
+    </div>
+  </main>
+
+  <script>
+    let templates = [];
+    let selectedTemplate = null;
+    
+    async function loadTemplates() {
+      try {
+        const res = await fetch('/api/templates');
+        const data = await res.json();
+        
+        if (data.success) {
+          templates = data.data.templates;
+          renderTemplates(templates);
+          populateSelect(templates);
+        }
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+        document.getElementById('template-grid').innerHTML = 'Failed to load templates';
+      }
+    }
+    
+    function renderTemplates(templates) {
+      const icons = {
+        'startup-founder': '🚀',
+        'software-developer': '💻',
+        'investor': '📈',
+        'researcher': '🔬',
+        'product-manager': '📋',
+        'project-management': '📁',
+        'learning-journal': '📚',
+        'minimal': '⚡'
+      };
+      
+      const grid = document.getElementById('template-grid');
+      grid.innerHTML = templates.map(t => `
+        <div class="template-card" data-id="${t.id}" onclick="selectTemplate('${t.id}')">
+          <div class="icon">${icons[t.id] || '📄'}</div>
+          <h3>${t.name}</h3>
+          <p>${t.description}</p>
+          <div class="categories">
+            ${Array(t.categoryCount).fill(0).map(() => '<span class="category-tag">●</span>').join('')}
+            <span style="color: var(--text-secondary); font-size: 0.8rem; margin-left: 0.5rem;">${t.categoryCount} categories</span>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function populateSelect(templates) {
+      const select = document.getElementById('template-select');
+      select.innerHTML = '<option value="">Select a template</option>' + 
+        templates.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    }
+    
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        const select = document.getElementById('project-select');
+        select.innerHTML = '<option value="">Select a project</option>' +
+          data.data.projects.map(p => `<option value="${p}">${p}</option>`).join('');
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    }
+    
+    async function selectTemplate(id) {
+      document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+      document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+      
+      try {
+        const res = await fetch(`/api/templates/${id}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          selectedTemplate = data.data;
+          showTemplateDetails(data.data);
+          document.getElementById('template-select').value = id;
+        }
+      } catch (err) {
+        console.error('Failed to load template details:', err);
+      }
+    }
+    
+    function showTemplateDetails(template) {
+      document.getElementById('detail-panel').style.display = 'block';
+      document.getElementById('detail-title').textContent = template.name;
+      
+      const list = document.getElementById('category-list');
+      list.innerHTML = template.categories.map(c => `
+        <li>
+          <div class="type">${c.title}</div>
+          <div class="desc">${c.description}</div>
+        </li>
+      `).join('');
+    }
+    
+    async function applyTemplate() {
+      const templateId = document.getElementById('template-select').value;
+      const project = document.getElementById('project-select').value;
+      
+      if (!templateId || !project) {
+        showAlert('Please select both a template and project', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('apply-btn');
+      btn.disabled = true;
+      btn.textContent = 'Applying...';
+      
+      try {
+        const res = await fetch('/api/templates/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateId, project })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showAlert(`Template applied! Created ${data.data.memoriesCreated} sample memories.`, 'success');
+        } else {
+          showAlert(data.error || 'Failed to apply template', 'error');
+        }
+      } catch (err) {
+        showAlert('Error: ' + err.message, 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Apply Template';
+    }
+    
+    function showAlert(message, type) {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert ${type} visible`;
+      setTimeout(() => alert.classList.remove('visible'), 5000);
+    }
+    
+    loadTemplates();
+    loadProjects();
+  </script>
+</body>
+</html>

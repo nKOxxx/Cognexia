@@ -1431,6 +1431,175 @@ app.get('/api/export/formats', (req, res) => {
   }));
 });
 
+// ============================================
+// AGENT COLLABORATION API
+// ============================================
+
+const agentCollab = require('./agent-collaboration');
+
+// Initialize agent schema on startup
+async function initAllAgentSchemas() {
+  const projects = listProjects();
+  for (const project of projects) {
+    try {
+      const db = await getDb(project);
+      await agentCollab.initAgentSchema(db);
+      db.close();
+    } catch (err) {
+      console.error(`[Mnemo Agents] Failed to init schema for ${project}:`, err.message);
+    }
+  }
+}
+
+// Register a new agent
+app.post('/api/agents', async (req, res) => {
+  try {
+    const { name, description, permissions, project } = req.body;
+    if (!name) {
+      return res.status(400).json(errorResponse('Agent name required'));
+    }
+    const db = await getDb(project || 'general');
+    await agentCollab.initAgentSchema(db);
+    const agent = await agentCollab.registerAgent(db, { name, description, permissions });
+    db.close();
+    res.json(successResponse(agent));
+  } catch (err) {
+    console.error('[Register Agent Error]', err);
+    res.status(500).json(errorResponse(err.message, 'REGISTER_AGENT_ERROR'));
+  }
+});
+
+// List all agents
+app.get('/api/agents', async (req, res) => {
+  try {
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    await agentCollab.initAgentSchema(db);
+    const agents = await agentCollab.listAgents(db);
+    db.close();
+    res.json(successResponse({ agents, count: agents.length }));
+  } catch (err) {
+    console.error('[List Agents Error]', err);
+    res.status(500).json(errorResponse(err.message, 'LIST_AGENTS_ERROR'));
+  }
+});
+
+// Get agent details
+app.get('/api/agents/:agentId', async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    await agentCollab.initAgentSchema(db);
+    const agent = await agentCollab.getAgent(db, agentId);
+    db.close();
+    if (!agent) {
+      return res.status(404).json(errorResponse('Agent not found'));
+    }
+    res.json(successResponse(agent));
+  } catch (err) {
+    console.error('[Get Agent Error]', err);
+    res.status(500).json(errorResponse(err.message, 'GET_AGENT_ERROR'));
+  }
+});
+
+// Share memory with agent
+app.post('/api/agents/share', async (req, res) => {
+  try {
+    const { memoryId, fromAgentId, toAgentId, shareType, project } = req.body;
+    if (!memoryId || !fromAgentId || !toAgentId) {
+      return res.status(400).json(errorResponse('memoryId, fromAgentId, and toAgentId required'));
+    }
+    const db = await getDb(project || 'general');
+    await agentCollab.initAgentSchema(db);
+    const share = await agentCollab.shareMemory(db, { memoryId, fromAgentId, toAgentId, shareType: shareType || 'read' });
+    await agentCollab.logAgentActivity(db, { agentId: fromAgentId, action: 'share', memoryId, project: project || 'general' });
+    db.close();
+    res.json(successResponse(share));
+  } catch (err) {
+    console.error('[Share Memory Error]', err);
+    res.status(500).json(errorResponse(err.message, 'SHARE_MEMORY_ERROR'));
+  }
+});
+
+// Get memories shared with agent
+app.get('/api/agents/:agentId/shared', async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { project, limit, offset } = req.query;
+    const db = await getDb(project || 'general');
+    await agentCollab.initAgentSchema(db);
+    const memories = await agentCollab.getSharedMemories(db, agentId, { limit: parseInt(limit) || 20, offset: parseInt(offset) || 0 });
+    db.close();
+    res.json(successResponse({ memories, count: memories.length }));
+  } catch (err) {
+    console.error('[Get Shared Memories Error]', err);
+    res.status(500).json(errorResponse(err.message, 'GET_SHARED_ERROR'));
+  }
+});
+
+// ============================================
+// MEMORY TEMPLATES API
+// ============================================
+
+const memoryTemplates = require('./memory-templates');
+
+// List all templates
+app.get('/api/templates', (req, res) => {
+  try {
+    const templates = memoryTemplates.getAllTemplates();
+    res.json(successResponse({ templates, count: templates.length }));
+  } catch (err) {
+    console.error('[Templates Error]', err);
+    res.status(500).json(errorResponse(err.message, 'TEMPLATES_ERROR'));
+  }
+});
+
+// Get specific template
+app.get('/api/templates/:templateId', (req, res) => {
+  try {
+    const { templateId } = req.params;
+    const template = memoryTemplates.getTemplate(templateId);
+    if (!template) {
+      return res.status(404).json(errorResponse('Template not found'));
+    }
+    res.json(successResponse(template));
+  } catch (err) {
+    console.error('[Template Error]', err);
+    res.status(500).json(errorResponse(err.message, 'TEMPLATE_ERROR'));
+  }
+});
+
+// Apply template to project
+app.post('/api/templates/apply', async (req, res) => {
+  try {
+    const { templateId, project } = req.body;
+    if (!templateId || !project) {
+      return res.status(400).json(errorResponse('templateId and project required'));
+    }
+    const result = memoryTemplates.applyTemplate(templateId, project);
+    const db = await getDb(project);
+    for (const memory of result.memories) {
+      const stmt = db.prepare(`INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+      await new Promise((resolve, reject) => {
+        stmt.run([generateId(), 'template', memory.content, memory.type, memory.importance, project, JSON.stringify(memory.metadata), memory.createdAt], (err) => {
+          stmt.finalize();
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+    db.close();
+    res.json(successResponse(result));
+  } catch (err) {
+    console.error('[Apply Template Error]', err);
+    res.status(500).json(errorResponse(err.message, 'APPLY_TEMPLATE_ERROR'));
+  }
+});
+
+// Initialize agent schemas
+initAllAgentSchemas().catch(console.error);
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('[API Error]', err);
@@ -1480,6 +1649,18 @@ app.listen(PORT, () => {
   console.log('║    GET  /api/graph/stats     - Graph statistics        ║');
   console.log('║    POST /api/graph/link      - Create memory link      ║');
   console.log('║    POST /api/graph/auto-link - Auto-build relationships║');
+  console.log('║                                                         ║');
+  console.log('║  Agent Collaboration:                                  ║');
+  console.log('║    GET  /api/agents          - List agents             ║');
+  console.log('║    POST /api/agents          - Register agent          ║');
+  console.log('║    GET  /api/agents/:id      - Get agent details       ║');
+  console.log('║    GET  /api/agents/:id/shared - Memories shared       ║');
+  console.log('║    POST /api/agents/share    - Share memory            ║');
+  console.log('║                                                         ║');
+  console.log('║  Memory Templates:                                     ║');
+  console.log('║    GET  /api/templates       - List templates          ║');
+  console.log('║    GET  /api/templates/:id   - Get template            ║');
+  console.log('║    POST /api/templates/apply - Apply to project        ║');
   console.log('║                                                         ║');
   console.log('║  Maintenance:                                          ║');
   console.log('║    GET  /api/crypto/status   - Encryption status       ║');
