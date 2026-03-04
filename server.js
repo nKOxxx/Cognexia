@@ -1010,6 +1010,187 @@ app.post('/api/maintenance', async (req, res) => {
   }
 });
 
+// ============================================
+// MEMORY GRAPH API
+// ============================================
+
+const memoryGraph = require('./memory-graph');
+
+// Initialize graph schema for all existing projects
+async function initAllGraphSchemas() {
+  const projects = listProjects();
+  for (const project of projects) {
+    try {
+      const db = await getDb(project);
+      await memoryGraph.initGraphSchema(db);
+      db.close();
+    } catch (err) {
+      console.error(`[Mnemo Graph] Failed to init schema for ${project}:`, err.message);
+    }
+  }
+}
+
+// Get memory graph for visualization
+app.get('/api/graph', async (req, res) => {
+  try {
+    const { project, days, minImportance } = req.query;
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const graph = await memoryGraph.buildMemoryGraph(db, {
+      days: parseInt(days) || 30,
+      minImportance: parseInt(minImportance) || 1,
+      includeLinks: true,
+      includeEntities: true
+    });
+    
+    db.close();
+    res.json(successResponse(graph));
+  } catch (err) {
+    console.error('[Graph Error]', err);
+    res.status(500).json(errorResponse(err.message, 'GRAPH_ERROR'));
+  }
+});
+
+// Get memory clusters (entity-based groups)
+app.get('/api/graph/clusters', async (req, res) => {
+  try {
+    const { project, days } = req.query;
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const clusters = await memoryGraph.getClusters(db, parseInt(days) || 30);
+    
+    db.close();
+    res.json(successResponse({ clusters, count: clusters.length }));
+  } catch (err) {
+    console.error('[Clusters Error]', err);
+    res.status(500).json(errorResponse(err.message, 'CLUSTERS_ERROR'));
+  }
+});
+
+// Get related memories (with relationship info)
+app.get('/api/graph/related/:memoryId', async (req, res) => {
+  try {
+    const { memoryId } = req.params;
+    const { project, limit } = req.query;
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const related = await memoryGraph.findRelatedByEntities(db, memoryId, parseInt(limit) || 5);
+    
+    db.close();
+    res.json(successResponse({ memoryId, related, count: related.length }));
+  } catch (err) {
+    console.error('[Related Error]', err);
+    res.status(500).json(errorResponse(err.message, 'RELATED_ERROR'));
+  }
+});
+
+// Create explicit link between memories
+app.post('/api/graph/link', async (req, res) => {
+  try {
+    const { sourceId, targetId, linkType, strength, project } = req.body;
+    
+    if (!sourceId || !targetId) {
+      return res.status(400).json(errorResponse('sourceId and targetId required'));
+    }
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const link = await memoryGraph.createLink(
+      db, 
+      sourceId, 
+      targetId, 
+      linkType || 'related', 
+      strength || 0.5
+    );
+    
+    db.close();
+    res.json(successResponse(link));
+  } catch (err) {
+    console.error('[Link Error]', err);
+    res.status(500).json(errorResponse(err.message, 'LINK_ERROR'));
+  }
+});
+
+// Find path between two memories
+app.get('/api/graph/path', async (req, res) => {
+  try {
+    const { from, to, project } = req.query;
+    
+    if (!from || !to) {
+      return res.status(400).json(errorResponse('from and to memory IDs required'));
+    }
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const path = await memoryGraph.findPath(db, from, to);
+    
+    db.close();
+    res.json(successResponse({ from, to, path, found: !!path }));
+  } catch (err) {
+    console.error('[Path Error]', err);
+    res.status(500).json(errorResponse(err.message, 'PATH_ERROR'));
+  }
+});
+
+// Run auto-linking to build relationships
+app.post('/api/graph/auto-link', async (req, res) => {
+  try {
+    const { project, days } = req.body;
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const result = await memoryGraph.autoLinkMemories(db, parseInt(days) || 7);
+    
+    db.close();
+    res.json(successResponse(result));
+  } catch (err) {
+    console.error('[Auto-Link Error]', err);
+    res.status(500).json(errorResponse(err.message, 'AUTO_LINK_ERROR'));
+  }
+});
+
+// Get graph statistics
+app.get('/api/graph/stats', async (req, res) => {
+  try {
+    const { project } = req.query;
+    
+    const db = await getDb(project || 'general');
+    await memoryGraph.initGraphSchema(db);
+    
+    const stats = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          (SELECT COUNT(*) FROM memories WHERE deleted_at IS NULL) as memory_count,
+          (SELECT COUNT(*) FROM memory_links) as link_count,
+          (SELECT COUNT(*) FROM memory_entities) as entity_count,
+          (SELECT COUNT(DISTINCT entity_name) FROM memory_entities) as unique_entities
+      `;
+      db.get(sql, [], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    db.close();
+    res.json(successResponse({ project: project || 'general', ...stats }));
+  } catch (err) {
+    console.error('[Stats Error]', err);
+    res.status(500).json(errorResponse(err.message, 'STATS_ERROR'));
+  }
+});
+
+// Initialize graph schemas on startup
+initAllGraphSchemas().catch(console.error);
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('[API Error]', err);
@@ -1039,6 +1220,8 @@ app.listen(PORT, () => {
   console.log('║    GET  /                    - Web UI (Memory Browser) ║');
   console.log('║    GET  /api/health          - Status & projects       ║');
   console.log('║    GET  /api/projects        - List all projects       ║');
+  console.log('║                                                         ║');
+  console.log('║  Memory Core:                                          ║');
   console.log('║    POST /api/memory/store    - Store a memory          ║');
   console.log('║    POST /api/memory/store-encrypted - Store encrypted  ║');
   console.log('║    GET  /api/memory/query    - Query project memory    ║');
@@ -1048,6 +1231,17 @@ app.listen(PORT, () => {
   console.log('║    GET  /api/memory/types    - List memory types       ║');
   console.log('║    GET  /api/memory/keywords - Get keyword suggestions ║');
   console.log('║    GET  /api/memory/timeline - Get memory timeline     ║');
+  console.log('║                                                         ║');
+  console.log('║  Memory Graph:                                         ║');
+  console.log('║    GET  /api/graph           - Get memory graph        ║');
+  console.log('║    GET  /api/graph/clusters  - Get memory clusters     ║');
+  console.log('║    GET  /api/graph/related/:id - Get related memories  ║');
+  console.log('║    GET  /api/graph/path      - Find path between nodes ║');
+  console.log('║    GET  /api/graph/stats     - Graph statistics        ║');
+  console.log('║    POST /api/graph/link      - Create memory link      ║');
+  console.log('║    POST /api/graph/auto-link - Auto-build relationships║');
+  console.log('║                                                         ║');
+  console.log('║  Maintenance:                                          ║');
   console.log('║    GET  /api/crypto/status   - Encryption status       ║');
   console.log('║    POST /api/crypto/enable   - Enable encryption       ║');
   console.log('║    POST /api/cleanup         - Delete old memories     ║');

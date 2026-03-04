@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mnemo Graph | Memory Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --bg-primary: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #252542;
+      --text-primary: #e8e8ff;
+      --text-secondary: #a0a0c0;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #2a2a4a;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    header {
+      background: var(--bg-secondary);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    
+    .logo svg {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent);
+    }
+    
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    select, button {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    button.secondary {
+      background: transparent;
+    }
+    
+    button.secondary:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    
+    #graph-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    }
+    
+    #graph-svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .sidebar {
+      width: 350px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    
+    .sidebar h3 {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--bg-tertiary);
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+    
+    .stat-card .value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
+    
+    .memory-detail {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .memory-detail .type {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    
+    .memory-detail .type.insight { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+    .memory-detail .type.decision { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .memory-detail .type.goal { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .memory-detail .type.milestone { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .memory-detail .type.preference { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .memory-detail .type.security { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+    
+    .memory-detail .content {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+    
+    .memory-detail .meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    .cluster-list {
+      list-style: none;
+    }
+    
+    .cluster-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .cluster-item:hover {
+      border-color: var(--accent);
+    }
+    
+    .cluster-item .name {
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .cluster-item .count {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .loading::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      margin: 1rem auto;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tooltip {
+      position: absolute;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      max-width: 300px;
+      z-index: 1000;
+    }
+    
+    .tooltip.visible {
+      opacity: 1;
+    }
+    
+    .legend {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      background: rgba(15, 15, 26, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    
+    .legend h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" stroke="#6366f1" stroke-width="2"/>
+        <circle cx="16" cy="16" r="8" fill="#6366f1"/>
+        <circle cx="16" cy="16" r="4" fill="#0f0f1a"/>
+      </svg>
+      Mnemo Graph
+    </div>
+    <nav class="nav-links">
+      <a href="/">Browse</a>
+      <a href="/graph.html" class="active">Graph</a>
+      <a href="/timeline.html">Timeline</a>
+    </nav>
+    <div class="controls">
+      <select id="project-select">
+        <option value="general">general</option>
+      </select>
+      <select id="days-select">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <button onclick="loadGraph()">Refresh</button>
+      <button class="secondary" onclick="autoLink()">Auto-Link</button>
+    </div>
+  </header>
+  
+  <main>
+    <div id="graph-container">
+      <div id="loading" class="loading">Loading memory graph...</div>
+      <svg id="graph-svg"></svg>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="legend">
+        <h4>Memory Types</h4>
+        <div class="legend-item"><div class="legend-color" style="background:#6366f1"></div> Insight</div>
+        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div> Decision</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div> Goal</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div> Milestone</div>
+        <div class="legend-item"><div class="legend-color" style="background:#8b5cf6"></div> Preference</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ec4899"></div> Security</div>
+      </div>
+    </div>
+    
+    <aside class="sidebar">
+      <h3>Graph Statistics</h3>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Memories</div>
+          <div class="value" id="stat-memories">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Connections</div>
+          <div class="value" id="stat-links">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Entities</div>
+          <div class="value" id="stat-entities">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Density</div>
+          <div class="value" id="stat-density">-</div>
+        </div>
+      </div>
+      
+      <h3>Memory Clusters</h3>
+      <ul class="cluster-list" id="cluster-list">
+        <li>Loading...</li>
+      </ul>
+      
+      <div id="selected-memory"></div>
+    </aside>
+  </main>
+
+  <script>
+    const colors = {
+      insight: '#6366f1',
+      decision: '#10b981',
+      goal: '#f59e0b',
+      milestone: '#ef4444',
+      preference: '#8b5cf6',
+      security: '#ec4899',
+      error: '#6b7280',
+      default: '#6b7280'
+    };
+    
+    let simulation;
+    let currentGraph = { nodes: [], edges: [] };
+    
+    // Load projects
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        const select = document.getElementById('project-select');
+        select.innerHTML = data.data.projects.map(p => 
+          `<option value="${p}">${p}</option>`
+        ).join('');
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    }
+    
+    // Load graph data
+    async function loadGraph() {
+      const project = document.getElementById('project-select').value;
+      const days = document.getElementById('days-select').value;
+      
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('graph-svg').innerHTML = '';
+      
+      try {
+        const res = await fetch(`/api/graph?project=${project}&days=${days}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          currentGraph = data.data;
+          renderGraph(data.data);
+          updateStats(data.data.stats);
+        }
+      } catch (err) {
+        console.error('Failed to load graph:', err);
+      }
+      
+      document.getElementById('loading').style.display = 'none';
+      loadClusters();
+      loadGraphStats();
+    }
+    
+    // Load graph statistics
+    async function loadGraphStats() {
+      const project = document.getElementById('project-select').value;
+      
+      try {
+        const res = await fetch(`/api/graph/stats?project=${project}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('stat-entities').textContent = data.data.unique_entities || 0;
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+    
+    // Load clusters
+    async function loadClusters() {
+      const project = document.getElementById('project-select').value;
+      
+      try {
+        const res = await fetch(`/api/graph/clusters?project=${project}`);
+        const data = await res.json();
+        
+        const list = document.getElementById('cluster-list');
+        if (data.success && data.data.clusters.length > 0) {
+          list.innerHTML = data.data.clusters.slice(0, 10).map(c => `
+            <li class="cluster-item" onclick="highlightCluster('${c.entity}')">
+              <div class="name">
+                <span>${getEntityIcon(c.type)}</span>
+                ${escapeHtml(c.entity)}
+              </div>
+              <div class="count">${c.memoryCount} memories</div>
+            </li>
+          `).join('');
+        } else {
+          list.innerHTML = '<li style="color: var(--text-secondary); padding: 1rem;">No clusters found. Run Auto-Link to generate relationships.</li>';
+        }
+      } catch (err) {
+        console.error('Failed to load clusters:', err);
+      }
+    }
+    
+    function getEntityIcon(type) {
+      const icons = {
+        technology: '💻',
+        organization: '🏢',
+        person: '👤',
+        project: '📁',
+        concept: '💡'
+      };
+      return icons[type] || '🏷️';
+    }
+    
+    // Auto-link memories
+    async function autoLink() {
+      const project = document.getElementById('project-select').value;
+      const btn = document.querySelector('button.secondary');
+      btn.textContent = 'Linking...';
+      btn.disabled = true;
+      
+      try {
+        const res = await fetch('/api/graph/auto-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project, days: 30 })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`Auto-link complete! Processed ${data.data.processed} memories, created ${data.data.linksCreated} links.`);
+          loadGraph();
+        }
+      } catch (err) {
+        console.error('Auto-link failed:', err);
+        alert('Auto-link failed. Check console.');
+      }
+      
+      btn.textContent = 'Auto-Link';
+      btn.disabled = false;
+    }
+    
+    // Update statistics
+    function updateStats(stats) {
+      document.getElementById('stat-memories').textContent = stats.nodeCount;
+      document.getElementById('stat-links').textContent = stats.edgeCount;
+      
+      const density = stats.nodeCount > 1 
+        ? (stats.edgeCount / (stats.nodeCount * (stats.nodeCount - 1) / 2) * 100).toFixed(1)
+        : 0;
+      document.getElementById('stat-density').textContent = density + '%';
+    }
+    
+    // Render D3 force-directed graph
+    function renderGraph(graph) {
+      const container = document.getElementById('graph-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      const svg = d3.select('#graph-svg')
+        .attr('viewBox', [0, 0, width, height]);
+      
+      // Clear previous
+      svg.selectAll('*').remove();
+      
+      if (graph.nodes.length === 0) {
+        svg.append('text')
+          .attr('x', width / 2)
+          .attr('y', height / 2)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#a0a0c0')
+          .text('No memories found for this time period');
+        return;
+      }
+      
+      // Add zoom behavior
+      const g = svg.append('g');
+      
+      const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+      
+      svg.call(zoom);
+      
+      // Create links
+      const link = g.append('g')
+        .attr('stroke', '#2a2a4a')
+        .attr('stroke-opacity', 0.6)
+        .selectAll('line')
+        .data(graph.edges)
+        .join('line')
+        .attr('stroke-width', d => Math.sqrt(d.strength * 5));
+      
+      // Create nodes
+      const node = g.append('g')
+        .selectAll('g')
+        .data(graph.nodes)
+        .join('g')
+        .attr('cursor', 'pointer')
+        .call(d3.drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended));
+      
+      // Node circles
+      node.append('circle')
+        .attr('r', d => 5 + d.importance * 2)
+        .attr('fill', d => colors[d.type] || colors.default)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5)
+        .attr('stroke-opacity', 0.8);
+      
+      // Node labels (only for important nodes)
+      node.append('text')
+        .attr('x', d => 8 + d.importance)
+        .attr('y', 4)
+        .text(d => d.content.substring(0, 30))
+        .attr('font-size', '10px')
+        .attr('fill', '#e8e8ff')
+        .attr('opacity', d => d.importance >= 7 ? 1 : 0.6);
+      
+      // Tooltip
+      const tooltip = d3.select('#tooltip');
+      
+      node.on('mouseover', (event, d) => {
+        tooltip.html(`
+          <strong>${d.type}</strong> (importance: ${d.importance})<br>
+          ${d.content.substring(0, 100)}${d.content.length > 100 ? '...' : ''}
+        `)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 10) + 'px')
+        .classed('visible', true);
+      })
+      .on('mouseout', () => {
+        tooltip.classed('visible', false);
+      })
+      .on('click', (event, d) => {
+        showMemoryDetail(d);
+      });
+      
+      // Force simulation
+      simulation = d3.forceSimulation(graph.nodes)
+        .force('link', d3.forceLink(graph.edges).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(d => 10 + d.importance * 2));
+      
+      simulation.on('tick', () => {
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+        
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+      
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+      
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+      
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+    }
+    
+    // Show memory detail in sidebar
+    function showMemoryDetail(node) {
+      const container = document.getElementById('selected-memory');
+      container.innerHTML = `
+        <h3>Selected Memory</h3>
+        <div class="memory-detail">
+          <span class="type ${node.type}">${node.type}</span>
+          <div class="content">${escapeHtml(node.fullContent)}</div>
+          <div class="meta">
+            Importance: ${node.importance}/10 | 
+            ${new Date(node.createdAt).toLocaleString()}
+          </div>
+        </div>
+      `;
+      
+      // Load related memories
+      loadRelated(node.id);
+    }
+    
+    // Load related memories
+    async function loadRelated(memoryId) {
+      const project = document.getElementById('project-select').value;
+      
+      try {
+        const res = await fetch(`/api/graph/related/${memoryId}?project=${project}&limit=5`);
+        const data = await res.json();
+        
+        if (data.success && data.data.related.length > 0) {
+          const container = document.getElementById('selected-memory');
+          container.innerHTML += `
+            <h3 style="margin-top: 1.5rem;">Related Memories</h3>
+            ${data.data.related.map(r => `
+              <div class="memory-detail" style="margin-top: 0.5rem;">
+                <span class="type ${r.content_type}">${r.content_type}</span>
+                <div class="content">${escapeHtml(r.content.substring(0, 150))}${r.content.length > 150 ? '...' : ''}</div>
+                <div class="meta">Shared entities: ${r.shared_entities}</div>
+              </div>
+            `).join('')}
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load related:', err);
+      }
+    }
+    
+    // Highlight cluster
+    function highlightCluster(entity) {
+      // Reset all nodes
+      d3.selectAll('circle')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5);
+      
+      // Find memories containing this entity and highlight
+      const matchingNodes = currentGraph.nodes.filter(n => 
+        n.fullContent.toLowerCase().includes(entity.toLowerCase())
+      );
+      
+      matchingNodes.forEach(node => {
+        d3.selectAll('circle')
+          .filter(d => d.id === node.id)
+          .attr('stroke', '#f59e0b')
+          .attr('stroke-width', 3);
+      });
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize
+    loadProjects();
+    loadGraph();
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      loadGraph();
+    });
+  </script>
+</body>
+</html>
