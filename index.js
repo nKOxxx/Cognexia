@@ -1,5 +1,5 @@
 /**
- * Mnemo - Long-term memory for AI agents
+ * Cognexia - Long-term memory for AI agents
  * Solves the goldfish problem: agents that forget everything
  */
 
@@ -9,7 +9,7 @@ const nlp = require('compromise');
 const path = require('path');
 const fs = require('fs');
 
-class Mnemo {
+class Cognexia {
   constructor(options = {}) {
     this.storage = options.storage || 'sqlite';
     this.limits = {
@@ -56,7 +56,7 @@ class Mnemo {
     try {
       const parsed = new URL(url);
       if (parsed.protocol !== 'https:') {
-        console.warn('[Mnemo] Warning: Non-HTTPS Supabase URL');
+        console.warn('[Cognexia] Warning: Non-HTTPS Supabase URL');
       }
     } catch (e) {
       throw new Error('Invalid Supabase URL format');
@@ -461,6 +461,6 @@ class Mnemo {
   }
 }
 
-module.exports = Mnemo;
-module.exports.sanitizeHTML = Mnemo.sanitizeHTML;
-module.exports.sanitizeCLI = Mnemo.sanitizeCLI;
+module.exports = Cognexia;
+module.exports.sanitizeHTML = Cognexia.sanitizeHTML;
+module.exports.sanitizeCLI = Cognexia.sanitizeCLI;

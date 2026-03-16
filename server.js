@@ -1,5 +1,5 @@
 /**
- * Mnemo API Server - Data Lake Edition
+ * Cognexia API Server - Data Lake Edition
  * Multi-project memory with isolated databases per project
  * Data location: ~/.openclaw/data-lake/memory-<project>/bridge.db
  */
@@ -11,7 +11,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Crypto module for blind indexing (optional encryption)
-const mnemoCrypto = require('./crypto');
+const cognexiaCrypto = require('./crypto');
 
 // File upload for import
 const multer = require('multer');
@@ -101,7 +101,7 @@ function errorResponse(message, code = null) {
 // Trust proxy headers when behind reverse proxy (nginx, traefik, etc.)
 if (process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', true);
-  console.log('[Mnemo] Trusting proxy headers (X-Forwarded-For, etc.)');
+  console.log('[Cognexia] Trusting proxy headers (X-Forwarded-For, etc.)');
 }
 
 // Security: Force HTTPS redirect in production
@@ -143,7 +143,7 @@ async function cleanupOldMemories(project = 'general', days = 90, maxImportance 
     db.run(sql, [cutoff.toISOString(), maxImportance], function(err) {
       db.close();
       if (err) return reject(err);
-      console.log(`[Mnemo Cleanup] Deleted ${this.changes} old memories from ${project}`);
+      console.log(`[Cognexia Cleanup] Deleted ${this.changes} old memories from ${project}`);
       resolve(this.changes);
     });
   });
@@ -211,7 +211,7 @@ async function compressOldMemories(project = 'general', days = 30) {
       }
       
       db.close();
-      console.log(`[Mnemo Compression] Compressed ${compressed} memories in ${project}`);
+      console.log(`[Cognexia Compression] Compressed ${compressed} memories in ${project}`);
       resolve(compressed);
     });
   });
@@ -221,7 +221,7 @@ async function compressOldMemories(project = 'general', days = 30) {
  * Run maintenance: cleanup + compression on all projects
  */
 async function runMaintenance() {
-  console.log('[Mnemo] Running maintenance...');
+  console.log('[Cognexia] Running maintenance...');
   const projects = listProjects();
   let totalCleaned = 0;
   let totalCompressed = 0;
@@ -234,11 +234,11 @@ async function runMaintenance() {
       const compressed = await compressOldMemories(project, 30);
       totalCompressed += compressed;
     } catch (err) {
-      console.error(`[Mnemo] Maintenance error for ${project}:`, err.message);
+      console.error(`[Cognexia] Maintenance error for ${project}:`, err.message);
     }
   }
   
-  console.log(`[Mnemo] Maintenance complete: ${totalCleaned} cleaned, ${totalCompressed} compressed`);
+  console.log(`[Cognexia] Maintenance complete: ${totalCleaned} cleaned, ${totalCompressed} compressed`);
   return { cleaned: totalCleaned, compressed: totalCompressed };
 }
 
@@ -260,7 +260,7 @@ function getProjectDbPath(project = 'general') {
   if (!fs.existsSync(projectDir)) {
     fs.mkdirSync(projectDir, { recursive: true });
     fs.chmodSync(projectDir, 0o700); // Owner-only access
-    console.log(`[Mnemo] Created new project memory: ${sanitized}`);
+    console.log(`[Cognexia] Created new project memory: ${sanitized}`);
   }
   
   return path.join(projectDir, 'bridge.db');
@@ -298,7 +298,7 @@ function initDatabase(dbPath) {
         db.close();
         return reject(err);
       }
-      console.log(`[Mnemo] Initialized database: ${dbPath}`);
+      console.log(`[Cognexia] Initialized database: ${dbPath}`);
       db.close();
       resolve();
     });
@@ -791,10 +791,10 @@ app.post('/api/memory/store-encrypted', async (req, res) => {
     }
     
     // Get or create encryption key
-    const key = mnemoCrypto.getOrCreateKey();
+    const key = cognexiaCrypto.getOrCreateKey();
     
     // Encrypt content and generate blind indexes
-    const encrypted = mnemoCrypto.encryptWithIndex(content, key);
+    const encrypted = cognexiaCrypto.encryptWithIndex(content, key);
     
     // Initialize schema if needed
     await initEncryptedSchema(project || 'general');
@@ -873,8 +873,8 @@ app.get('/api/memory/query-encrypted', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter "q" required' });
     }
     
-    const key = mnemoCrypto.getOrCreateKey();
-    const queryIndex = mnemoCrypto.generateQueryIndex(q, key);
+    const key = cognexiaCrypto.getOrCreateKey();
+    const queryIndex = cognexiaCrypto.generateQueryIndex(q, key);
     
     const db = await getDb(project || 'general');
     
@@ -900,7 +900,7 @@ app.get('/api/memory/query-encrypted', async (req, res) => {
     // Decrypt results for client (client should do this in production)
     const decryptedResults = results.map(row => {
       try {
-        const plaintext = mnemoCrypto.decrypt(row.ciphertext, row.iv, key);
+        const plaintext = cognexiaCrypto.decrypt(row.ciphertext, row.iv, key);
         return {
           id: row.id,
           content: plaintext,
@@ -937,10 +937,10 @@ app.get('/api/memory/query-encrypted', async (req, res) => {
 
 // Get encryption status
 app.get('/api/crypto/status', (req, res) => {
-  const enabled = mnemoCrypto.isEncryptionEnabled();
+  const enabled = cognexiaCrypto.isEncryptionEnabled();
   res.json(successResponse({
     encryptionEnabled: enabled,
-    keyExists: fs.existsSync(path.join(require('os').homedir(), '.openclaw', 'mnemo.key')),
+    keyExists: fs.existsSync(path.join(require('os').homedir(), '.openclaw', 'cognexia.key')),
     algorithm: 'AES-256-GCM',
     indexing: 'HMAC-SHA256 (blind indexes)',
     note: 'Server can search but cannot read content without client key'
@@ -950,7 +950,7 @@ app.get('/api/crypto/status', (req, res) => {
 // Enable encryption
 app.post('/api/crypto/enable', (req, res) => {
   try {
-    mnemoCrypto.enableEncryption();
+    cognexiaCrypto.enableEncryption();
     res.json(successResponse({ 
       message: 'Encryption enabled. New memories will be encrypted.',
       warning: 'Existing memories remain unencrypted. Migrate if needed.'
@@ -1028,7 +1028,7 @@ async function initAllGraphSchemas() {
       await memoryGraph.initGraphSchema(db);
       db.close();
     } catch (err) {
-      console.error(`[Mnemo Graph] Failed to init schema for ${project}:`, err.message);
+      console.error(`[Cognexia Graph] Failed to init schema for ${project}:`, err.message);
     }
   }
 }
@@ -1201,7 +1201,7 @@ initAllGraphSchemas().catch(console.error);
 const importExport = require('./import-export');
 
 // Configure multer for file uploads
-const upload = multer({ dest: '/tmp/mnemo-uploads/' });
+const upload = multer({ dest: '/tmp/cognexia-uploads/' });
 
 // Import memories from file
 app.post('/api/import', upload.single('file'), async (req, res) => {
@@ -1318,7 +1318,7 @@ app.get('/api/export', async (req, res) => {
     });
     
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `mnemo-export-${project || 'general'}-${timestamp}`;
+    const filename = `cognexia-export-${project || 'general'}-${timestamp}`;
     
     switch (format) {
       case 'json': {
@@ -1385,7 +1385,7 @@ app.get('/api/import/formats', (req, res) => {
       {
         id: 'json',
         name: 'JSON Backup',
-        description: 'Mnemo JSON backup format',
+        description: 'Cognexia JSON backup format',
         fileType: '.json'
       },
       {
@@ -1445,7 +1445,7 @@ async function initAllAgentSchemas() {
       await agentCollab.initAgentSchema(db);
       db.close();
     } catch (err) {
-      console.error(`[Mnemo Agents] Failed to init schema for ${project}:`, err.message);
+      console.error(`[Cognexia Agents] Failed to init schema for ${project}:`, err.message);
     }
   }
 }
@@ -1618,7 +1618,7 @@ app.get('*', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log('╔════════════════════════════════════════════════════════╗');
-  console.log('║     Mnemo 🧠 — Data Lake Edition v2.3.0                ║');
+  console.log('║     Cognexia 🧠 — Data Lake Edition v2.3.0                ║');
   console.log('╠════════════════════════════════════════════════════════╣');
   console.log(`║  Data Lake: ${DATA_LAKE_BASE.padEnd(46)}║`);
   console.log(`║  Web UI:    http://localhost:${PORT}${' '.repeat(29 - PORT.toString().length)}║`);
@@ -1684,7 +1684,7 @@ app.listen(PORT, () => {
     setInterval(runMaintenance, 24 * 60 * 60 * 1000);
   }, msUntilMaintenance);
   
-  console.log(`[Mnemo] Next maintenance: ${nextMaintenance.toLocaleString()}`);
+  console.log(`[Cognexia] Next maintenance: ${nextMaintenance.toLocaleString()}`);
 });
 
 module.exports = { app, getProjectDbPath, listProjects };

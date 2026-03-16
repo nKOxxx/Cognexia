@@ -1,4 +1,4 @@
-# Mnemo Persistence Test Report
+# Cognexia Persistence Test Report
 
 **Date:** 2026-03-11  
 **Tester:** Ares  
@@ -8,14 +8,14 @@
 
 ## Test Objective
 
-Verify that Mnemo correctly persists data to disk and data survives server restarts (similar to AgentVault persistence test).
+Verify that Cognexia correctly persists data to disk and data survives server restarts (similar to AgentVault persistence test).
 
 ---
 
 ## Test Procedure
 
 ### Phase 1: Initial Storage
-1. Start Mnemo server
+1. Start Cognexia server
 2. Create new project "persistencetest"
 3. Store 2 test memories:
    - Milestone: "Deployed v2.0 to Vercel..."
@@ -23,10 +23,10 @@ Verify that Mnemo correctly persists data to disk and data survives server resta
 4. Verify data exists via API query
 
 ### Phase 2: Server Restart
-1. Stop Mnemo server completely
+1. Stop Cognexia server completely
 2. Verify process terminated
 3. Wait 2 seconds
-4. Restart Mnemo server
+4. Restart Cognexia server
 5. Verify server starts successfully
 
 ### Phase 3: Persistence Verification
@@ -77,11 +77,11 @@ ID: 0c5ca7c8-1625-42ef-b73a-a5d84e325b11
 
 ```
 $ ./start.sh stop
-Mnemo stopped ✅
+Cognexia stopped ✅
 
 $ ./start.sh start
-Starting Mnemo Data Lake...
-✅ Mnemo running on http://localhost:10000
+Starting Cognexia Data Lake...
+✅ Cognexia running on http://localhost:10000
 ```
 
 **Server restarted successfully**
@@ -153,7 +153,7 @@ WHERE content LIKE '%PERSISTENCE%';
 
 ## Conclusion
 
-**✅ Mnemo persistence is working correctly.**
+**✅ Cognexia persistence is working correctly.**
 
 - Data is written to SQLite database files
 - Database files survive server restarts

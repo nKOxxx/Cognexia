@@ -1,33 +1,33 @@
-# CLAUDE.md Converter for Mnemo
+# CLAUDE.md Converter for Cognexia
 
-Bridges centminmod's [CLAUDE.md](https://github.com/centminmod/my-claude-code-setup) memory bank format with Mnemo's persistence system.
+Bridges centminmod's [CLAUDE.md](https://github.com/centminmod/my-claude-code-setup) memory bank format with Cognexia's persistence system.
 
 ## Why This Exists
 
 - **CLAUDE.md** = Great for Claude Code, manual file-based memory
-- **Mnemocode** = Universal, compressed, API-driven persistence
+- **Cognexiacode** = Universal, compressed, API-driven persistence
 - **This converter** = Best of both worlds
 
 ## Quick Start
 
 ```bash
-# Convert single CLAUDE.md to Mnemocode
-./claude-md-converter.js --to-mnemo CLAUDE.md > memories.mnemo
+# Convert single CLAUDE.md to Cognexiacode
+./claude-md-converter.js --to-cognexia CLAUDE.md > memories.cognexia
 
-# Convert Mnemocode back to CLAUDE.md
-./claude-md-converter.js --to-claude memories.mnemo > CLAUDE.md
+# Convert Cognexiacode back to CLAUDE.md
+./claude-md-converter.js --to-claude memories.cognexia > CLAUDE.md
 
 # Sync entire directories
 ./claude-md-converter.js --sync \
   --claude-dir ./memory-bank \
-  --mnemo-dir ./mnemo-store
+  --cognexia-dir ./cognexia-store
 ```
 
 ## Features
 
 ### 1. Bidirectional Conversion
-- CLAUDE.md → Mnemocode (with full metadata)
-- Mnemocode → CLAUDE.md (structured sections)
+- CLAUDE.md → Cognexiacode (with full metadata)
+- Cognexiacode → CLAUDE.md (structured sections)
 
 ### 2. Smart Type Detection
 Automatically categorizes memories:
@@ -49,48 +49,48 @@ Infers importance from headers:
 - TODO/Task → Priority 5
 - Default → Priority 3
 
-## Integration with Mnemo
+## Integration with Cognexia
 
 ```javascript
-const { parseClaudeMd, toMnemocode } = require('./claude-md-converter');
+const { parseClaudeMd, toCognexiacode } = require('./claude-md-converter');
 
 // Read CLAUDE.md
 const claudeContent = fs.readFileSync('CLAUDE.md', 'utf8');
 const memories = parseClaudeMd(claudeContent, 'CLAUDE.md');
 
-// Convert to Mnemocode
-const mnemoContent = toMnemocode(memories, {
+// Convert to Cognexiacode
+const cognexiaContent = toCognexiacode(memories, {
     project: 'my-project',
     sessionId: 'session_123'
 });
 
-// Store in Mnemo
-fs.writeFileSync('memory.mnemo', mnemoContent);
+// Store in Cognexia
+fs.writeFileSync('memory.cognexia', cognexiaContent);
 ```
 
 ## Use Cases
 
 ### 1. Piggyback on CLAUDE.md Popularity
-- Existing CLAUDE.md users can migrate to Mnemo gradually
-- Mnemo users can export to CLAUDE.md for Claude Code compatibility
+- Existing CLAUDE.md users can migrate to Cognexia gradually
+- Cognexia users can export to CLAUDE.md for Claude Code compatibility
 
 ### 2. Hybrid Workflow
 - Use CLAUDE.md for active development (Claude Code)
-- Use Mnemo for long-term persistence and cross-project memory
+- Use Cognexia for long-term persistence and cross-project memory
 
 ### 3. Community Bridge
-- Share memories between CLAUDE.md and Mnemo ecosystems
+- Share memories between CLAUDE.md and Cognexia ecosystems
 - Contribute to both projects without duplicating work
 
 ## Command Reference
 
 | Flag | Description |
 |------|-------------|
-| `--to-mnemo <file>` | Convert CLAUDE.md to Mnemocode |
-| `--to-claude <file>` | Convert Mnemocode to CLAUDE.md |
+| `--to-cognexia <file>` | Convert CLAUDE.md to Cognexiacode |
+| `--to-claude <file>` | Convert Cognexiacode to CLAUDE.md |
 | `--sync` | Bidirectional directory sync |
 | `--claude-dir <dir>` | Source CLAUDE.md directory |
-| `--mnemo-dir <dir>` | Target Mnemo directory |
+| `--cognexia-dir <dir>` | Target Cognexia directory |
 | `--project <name>` | Project identifier |
 | `--bidirectional` | Enable two-way sync |
 
@@ -107,13 +107,13 @@ Never store API keys in plain text.
 We chose PostgreSQL over MongoDB for ACID compliance.
 ```
 
-### Output (Mnemocode)
+### Output (Cognexiacode)
 ```
-## MNEMOCODE v1.1
+## COGNEXIACODE v1.1
 ## Source: CLAUDE.md Converter v1.0.0
 ...
 
-◊MNEMO◊
+◊COGNEXIA◊
 ID:mm_1234567890_abc123
 TYPE:security
 SRC:CLAUDE.md
@@ -136,4 +136,4 @@ Never store API keys in plain text.
 ---
 
 **Version:** 1.0.0  
-**License:** MIT (same as Mnemo)
+**License:** MIT (same as Cognexia)

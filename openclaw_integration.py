@@ -1,4 +1,4 @@
-# Mnemo OpenClaw Integration
+# cognexia OpenClaw Integration
 # Auto-routes memories by project, provides session context
 
 import json
@@ -7,10 +7,10 @@ import httpx
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-MNEMO_URL = "http://localhost:10000"
+cognexia_URL = "http://localhost:10000"
 
-class MnemoClient:
-    """Client for Mnemo memory system with auto project routing"""
+class cognexiaClient:
+    """Client for cognexia memory system with auto project routing"""
     
     def __init__(self, agent_id: str = "ares"):
         self.agent_id = agent_id
@@ -18,9 +18,9 @@ class MnemoClient:
         self.client = httpx.AsyncClient(timeout=10.0)
     
     async def health_check(self) -> bool:
-        """Check if Mnemo server is running"""
+        """Check if cognexia server is running"""
         try:
-            response = await self.client.get(f"{MNEMO_URL}/api/health")
+            response = await self.client.get(f"{cognexia_URL}/api/health")
             return response.status_code == 200
         except:
             return False
@@ -64,7 +64,7 @@ class MnemoClient:
         
         try:
             response = await self.client.post(
-                f"{MNEMO_URL}/api/memory/store",
+                f"{cognexia_URL}/api/memory/store",
                 json={
                     "content": content,
                     "type": memory_type,
@@ -79,7 +79,7 @@ class MnemoClient:
             )
             return response.status_code == 200
         except Exception as e:
-            print(f"[Mnemo] Store failed: {e}")
+            print(f"[cognexia] Store failed: {e}")
             return False
     
     async def query(self, query_text: str, project: Optional[str] = None,
@@ -89,7 +89,7 @@ class MnemoClient:
         
         try:
             response = await self.client.get(
-                f"{MNEMO_URL}/api/memory/query",
+                f"{cognexia_URL}/api/memory/query",
                 params={
                     "q": query_text,
                     "project": target_project,
@@ -103,14 +103,14 @@ class MnemoClient:
                 return data.get("memories", [])
             return []
         except Exception as e:
-            print(f"[Mnemo] Query failed: {e}")
+            print(f"[cognexia] Query failed: {e}")
             return []
     
     async def query_all(self, query_text: str, limit: int = 10) -> List[Dict]:
         """Query memories across all projects"""
         try:
             response = await self.client.get(
-                f"{MNEMO_URL}/api/memory/query-all",
+                f"{cognexia_URL}/api/memory/query-all",
                 params={"q": query_text, "limit": limit}
             )
             if response.status_code == 200:
@@ -118,7 +118,7 @@ class MnemoClient:
                 return data.get("results", [])
             return []
         except Exception as e:
-            print(f"[Mnemo] Query-all failed: {e}")
+            print(f"[cognexia] Query-all failed: {e}")
             return []
     
     async def load_session_context(self, project: Optional[str] = None) -> Dict[str, Any]:
@@ -246,35 +246,35 @@ class MnemoClient:
 
 
 # Singleton instance
-_mnemo_client: Optional[MnemoClient] = None
+_cognexia_client: Optional[cognexiaClient] = None
 
-def get_mnemo_client() -> MnemoClient:
-    """Get or create Mnemo client singleton"""
-    global _mnemo_client
-    if _mnemo_client is None:
-        _mnemo_client = MnemoClient(agent_id="ares")
+def get_cognexia_client() -> cognexiaClient:
+    """Get or create cognexia client singleton"""
+    global _cognexia_client
+    if _cognexia_client is None:
+        _cognexia_client = cognexiaClient(agent_id="ares")
     return _mneno_client
 
 
 # Convenience functions for direct use
-async def mnemo_store(content: str, memory_type: str = "insight", 
+async def cognexia_store(content: str, memory_type: str = "insight", 
                       importance: int = 5, project: Optional[str] = None) -> bool:
     """Store memory (convenience function)"""
-    client = get_mnemo_client()
+    client = get_cognexia_client()
     return await client.store(content, memory_type, importance, project)
 
-async def mnemo_query(query_text: str, project: Optional[str] = None,
+async def cognexia_query(query_text: str, project: Optional[str] = None,
                       limit: int = 5, days: int = 30) -> List[Dict]:
     """Query memories (convenience function)"""
-    client = get_mnemo_client()
+    client = get_cognexia_client()
     return await client.query(query_text, project, limit, days)
 
-async def mnemo_load_context(project: Optional[str] = None) -> Dict[str, Any]:
+async def cognexia_load_context(project: Optional[str] = None) -> Dict[str, Any]:
     """Load session context (convenience function)"""
-    client = get_mnemo_client()
+    client = get_cognexia_client()
     return await client.load_session_context(project)
 
-async def mnemo_auto_store(text: str) -> bool:
+async def cognexia_auto_store(text: str) -> bool:
     """Auto-store if memory-worthy (convenience function)"""
-    client = get_mnemo_client()
+    client = get_cognexia_client()
     return await client.auto_store(text)

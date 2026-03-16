@@ -1,5 +1,5 @@
 /**
- * Memory Import/Export Module for Mnemo
+ * Memory Import/Export Module for Cognexia
  * 
  * Features:
  * - Import from ChatGPT conversations (JSON export)
@@ -125,7 +125,7 @@ function importClaude(filePath) {
 }
 
 /**
- * Import from JSON backup (Mnemo format)
+ * Import from JSON backup (Cognexia format)
  * @param {string} filePath 
  */
 function importJSON(filePath) {
@@ -201,7 +201,7 @@ function exportToObsidian(memories, outputDir) {
 type: ${memory.type}
 importance: ${memory.importance}
 created: ${memory.createdAt}
-source: mnemo
+source: cognexia
 ---
 
 `;
@@ -257,7 +257,7 @@ function exportToJSON(memories, outputPath) {
   const exportData = {
     exportDate: new Date().toISOString(),
     version: '2.3.0',
-    source: 'mnemo',
+    source: 'cognexia',
     memoryCount: memories.length,
     memories: memories.map(m => ({
       id: m.id,

@@ -1,8 +1,8 @@
-# Mnemo Smart Activation System
+# Cognexia Smart Activation System
 
 ## Overview
 
-Mnemo becomes proactive - it listens to all conversations and intelligently activates when important context is detected, saving relevant data automatically without explicit commands.
+Cognexia becomes proactive - it listens to all conversations and intelligently activates when important context is detected, saving relevant data automatically without explicit commands.
 
 ## Activation Triggers
 
@@ -27,7 +27,7 @@ const EXPLICIT_TRIGGERS = [
 ### 2. **Project Name Detection** (Context Switch)
 
 ```javascript
-// Mnemo maintains list of known projects
+// Cognexia maintains list of known projects
 const knownProjects = ['gulfwatch', 'agentvault', 'moltguard', '2ndcto', ...];
 
 // Detect project mentions
@@ -160,19 +160,19 @@ function scoreMessage(message, context) {
 | 5-6 | Suggest storage | "💡 Store this? [Yes/No/Edit]" |
 | <5 | Ignore | - |
 
-## Implementation: Mnemo Smart Hook
+## Implementation: Cognexia Smart Hook
 
-### File: `mnemo-smart-hook.js`
+### File: `cognexia-smart-hook.js`
 
 ```javascript
 /**
- * Mnemo Smart Activation Hook
+ * Cognexia Smart Activation Hook
  * Proactively stores relevant memories from all conversations
  */
 
-class MnemoSmartHook {
+class CognexiaSmartHook {
   constructor() {
-    this.apiUrl = process.env.MNEMO_URL || 'http://localhost:10000';
+    this.apiUrl = process.env.COGNEXIA_URL || 'http://localhost:10000';
     this.threshold = 6; // Minimum score to store
     this.recentMessages = []; // Sliding window for context
     this.knownProjects = new Set();
@@ -187,7 +187,7 @@ class MnemoSmartHook {
       const data = await response.json();
       this.knownProjects = new Set(data.projects || []);
     } catch (e) {
-      console.error('[MnemoSmart] Failed to load projects:', e);
+      console.error('[CognexiaSmart] Failed to load projects:', e);
     }
   }
   
@@ -292,7 +292,7 @@ class MnemoSmartHook {
   }
   
   /**
-   * Store memory to Mnemo
+   * Store memory to Cognexia
    */
   async storeMemory(message, analysis, context) {
     const memory = {
@@ -319,7 +319,7 @@ class MnemoSmartHook {
       });
       
       if (response.ok) {
-        console.log(`[MnemoSmart] Stored: ${analysis.detectedType} (${analysis.score}/10)`);
+        console.log(`[CognexiaSmart] Stored: ${analysis.detectedType} (${analysis.score}/10)`);
         
         // Notify if high importance
         if (analysis.score >= 8) {
@@ -329,7 +329,7 @@ class MnemoSmartHook {
         return true;
       }
     } catch (e) {
-      console.error('[MnemoSmart] Failed to store:', e);
+      console.error('[CognexiaSmart] Failed to store:', e);
     }
     
     return false;
@@ -379,16 +379,16 @@ class MnemoSmartHook {
   
   notifyUser(message) {
     // Integration point - send to Telegram, console, etc.
-    console.log(`[Mnemo] ${message}`);
+    console.log(`[Cognexia] ${message}`);
   }
 }
 
 // Export for use as OpenClaw hook or standalone
-module.exports = MnemoSmartHook;
+module.exports = CognexiaSmartHook;
 
 // If run directly, test
 if (require.main === module) {
-  const hook = new MnemoSmartHook();
+  const hook = new CognexiaSmartHook();
   
   // Test messages
   const tests = [
@@ -401,7 +401,7 @@ if (require.main === module) {
     "Hey, how are you?" // Should not trigger
   ];
   
-  console.log('Testing Mnemo Smart Hook...\n');
+  console.log('Testing Cognexia Smart Hook...\n');
   
   for (const test of tests) {
     const analysis = hook.analyzeMessage(test, {});
@@ -421,8 +421,8 @@ if (require.main === module) {
 // ~/.openclaw/config.json
 {
   "hooks": {
-    "messageReceived": ["mnemo-smart-hook.js"],
-    "sessionStart": ["mnemo-hook.js"]
+    "messageReceived": ["cognexia-smart-hook.js"],
+    "sessionStart": ["cognexia-hook.js"]
   }
 }
 ```
@@ -431,12 +431,12 @@ if (require.main === module) {
 
 ```javascript
 // In OpenClaw message processing pipeline
-const MnemoSmartHook = require('./mnemo-smart-hook');
-const mnemoHook = new MnemoSmartHook();
+const CognexiaSmartHook = require('./cognexia-smart-hook');
+const cognexiaHook = new CognexiaSmartHook();
 
 async function processMessage(message, context) {
-  // First, let Mnemo analyze and potentially store
-  await mnemoHook.onMessage(message, context);
+  // First, let Cognexia analyze and potentially store
+  await cognexiaHook.onMessage(message, context);
   
   // Continue with normal processing
   return generateResponse(message, context);
@@ -448,12 +448,12 @@ async function processMessage(message, context) {
 For non-OpenClaw bots (Telegram bot, Discord bot, etc.):
 
 ```javascript
-const MnemoSmartHook = require('./mnemo-smart-hook');
-const mnemo = new MnemoSmartHook();
+const CognexiaSmartHook = require('./cognexia-smart-hook');
+const cognexia = new CognexiaSmartHook();
 
 // Telegram bot example
 bot.on('message', async (msg) => {
-  await mnemo.onMessage(msg.text, {
+  await cognexia.onMessage(msg.text, {
     agentId: 'telegram-bot',
     currentProject: detectProjectFromChat(msg.chat.id)
   });
@@ -466,7 +466,7 @@ bot.on('message', async (msg) => {
 
 **User:** "New project MoltBase - agent-native Notion competitor"
 
-**Mnemo:**
+**Cognexia:**
 1. Score: 9/10 (explicit trigger + substantial content)
 2. Action: Auto-store as `goal` type
 3. Create project "moltbase" in database
@@ -476,7 +476,7 @@ bot.on('message', async (msg) => {
 
 **User:** "I decided to use PostgreSQL instead of MongoDB for the user data"
 
-**Mnemo:**
+**Cognexia:**
 1. Score: 7/10 (decision trigger + substantial)
 2. Action: Auto-store as `decision` type
 3. Silent store (score < 8)
@@ -485,7 +485,7 @@ bot.on('message', async (msg) => {
 
 **User:** "Gulf Watch needs a better RSS feed parser"
 
-**Mnemo:**
+**Cognexia:**
 1. Score: 5/10 (project mention + issue keyword)
 2. Action: Suggest storage
 3. Ask: "💡 Store this insight about Gulf Watch? [Yes/No/Edit]"
@@ -494,7 +494,7 @@ bot.on('message', async (msg) => {
 
 **User:** "Hey, how's it going?"
 
-**Mnemo:**
+**Cognexia:**
 1. Score: 0/10 (no triggers)
 2. Action: Ignore
 3. No storage, no notification
@@ -502,7 +502,7 @@ bot.on('message', async (msg) => {
 ## Configuration
 
 ```javascript
-// mnemo-smart-config.json
+// cognexia-smart-config.json
 {
   "threshold": {
     "autoStore": 8,      // Auto-store without confirmation
@@ -528,7 +528,7 @@ bot.on('message', async (msg) => {
 
 ## Benefits
 
-1. **Never Miss Important Context** - Mnemo captures decisions, bugs, goals automatically
+1. **Never Miss Important Context** - Cognexia captures decisions, bugs, goals automatically
 2. **Zero Friction** - No explicit commands needed
 3. **Smart Filtering** - Casual chat ignored, important stuff saved
 4. **Project Awareness** - Auto-detects which project is being discussed
@@ -537,7 +537,7 @@ bot.on('message', async (msg) => {
 
 ## Next Steps
 
-1. Implement `mnemo-smart-hook.js`
+1. Implement `cognexia-smart-hook.js`
 2. Add to OpenClaw hooks
 3. Test with real conversations
 4. Tune thresholds based on results

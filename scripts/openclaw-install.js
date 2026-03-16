@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * OpenClaw Mnemo Integration
- * Auto-installs and configures Mnemo for OpenClaw
+ * OpenClaw Cognexia Integration
+ * Auto-installs and configures Cognexia for OpenClaw
  */
 
 const fs = require('fs');
@@ -10,14 +10,14 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const OPENCLAW_DIR = process.env.OPENCLAW_WORKSPACE || path.join(require('os').homedir(), '.openclaw/workspace');
-const MEMORY_DIR = path.join(OPENCLAW_DIR, '.mnemo');
+const MEMORY_DIR = path.join(OPENCLAW_DIR, '.cognexia');
 
 function main() {
-  console.log('🧠 Mnemo - OpenClaw Integration\n');
+  console.log('🧠 Cognexia - OpenClaw Integration\n');
   
   // Check if already installed
   if (fs.existsSync(MEMORY_DIR)) {
-    console.log('✅ Mnemo already installed');
+    console.log('✅ Cognexia already installed');
     console.log(`   Location: ${MEMORY_DIR}`);
     return;
   }
@@ -39,15 +39,15 @@ function main() {
   );
   
   // Create wrapper module
-  const wrapperCode = `// Mnemo OpenClaw Integration
-const Mnemo = require('mnemo');
+  const wrapperCode = `// Cognexia OpenClaw Integration
+const Cognexia = require('cognexia');
 const path = require('path');
 
 const configPath = path.join(__dirname, 'config.json');
 const config = require(configPath);
 
 // Initialize memory
-const memory = new Mnemo(config);
+const memory = new Cognexia(config);
 
 // Enhanced store with OpenClaw defaults
 async function store(content, options = {}) {
@@ -141,8 +141,8 @@ module.exports = {
   fs.writeFileSync(path.join(MEMORY_DIR, 'openclaw-wrapper.js'), wrapperCode);
   
   // Create usage example
-  const exampleCode = `// Example: Using Mnemo in OpenClaw
-const { store, query, getSessionContext, autoStore } = require('./.mnemo/openclaw-wrapper');
+  const exampleCode = `// Example: Using Cognexia in OpenClaw
+const { store, query, getSessionContext, autoStore } = require('./.cognexia/openclaw-wrapper');
 
 // Store a memory
 await store('User wants to build 3 products this quarter', {
@@ -168,14 +168,14 @@ await autoStore(userMessage, agentResponse);
   
   fs.writeFileSync(path.join(MEMORY_DIR, 'example.js'), exampleCode);
   
-  console.log('✅ Mnemo installed for OpenClaw');
+  console.log('✅ Cognexia installed for OpenClaw');
   console.log(`   Config: ${MEMORY_DIR}/config.json`);
   console.log(`   Database: ${config.path}`);
   console.log(`   Wrapper: ${MEMORY_DIR}/openclaw-wrapper.js`);
   console.log('\nNext steps:');
-  console.log('  1. Install mnemo: npm install mnemo');
-  console.log('  2. Require in your code: require("./.mnemo/openclaw-wrapper")');
-  console.log('  3. See example: cat .mnemo/example.js');
+  console.log('  1. Install cognexia: npm install cognexia');
+  console.log('  2. Require in your code: require("./.cognexia/openclaw-wrapper")');
+  console.log('  3. See example: cat .cognexia/example.js');
 }
 
 main().catch(err => {

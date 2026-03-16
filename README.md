@@ -1,8 +1,8 @@
-# Mnemo 🧠 — The Missing Memory Layer for AI Agents
+# Cognexia 🧠 — The Missing Memory Layer for AI Agents
 
 **Why do AI agents forget everything?** Every conversation starts from scratch. Context windows fill up. Previous work disappears. Multi-day projects become impossible.
 
-**Mnemo solves this.** It's long-term memory for AI agents — permanent, searchable, project-based memory that persists across sessions.
+**Cognexia solves this.** It's long-term memory for AI agents — permanent, searchable, project-based memory that persists across sessions.
 
 > *"Finally, agents that remember what we talked about yesterday."*
 
@@ -10,7 +10,7 @@
 
 ## ⚠️ Production Notice
 
-**Mnemo is designed for LOCAL-ONLY, PERSONAL USE:**
+**Cognexia is designed for LOCAL-ONLY, PERSONAL USE:**
 - ✅ Your data never leaves your machine
 - ⚠️ No cloud backup — you must backup `~/.openclaw/data-lake/` yourself  
 - ⚠️ Encryption keys stored locally — protect your machine
@@ -20,7 +20,7 @@
 
 ## The Problem We Solve
 
-| Without Mnemo | With Mnemo |
+| Without Cognexia | With Cognexia |
 |---------------|------------|
 | ❌ "What were we building yesterday?" | ✅ "Continuing the payment integration..." |
 | ❌ Lose context after 20 messages | ✅ Search entire project history |
@@ -40,7 +40,7 @@ Data Lake: ~/.openclaw/data-lake/
 
 ## The Problem
 
-| Without Mnemo | With Mnemo |
+| Without Cognexia | With Cognexia |
 |----------------------|-------------------|
 | ❌ Forget everything when session ends | ✅ Memories persist forever |
 | ❌ Lose context after 20 messages | ✅ Search entire history instantly |
@@ -55,10 +55,10 @@ Data Lake: ~/.openclaw/data-lake/
 ### 1. Start the Server
 
 ```bash
-cd /path/to/Mnemo
+cd /path/to/Cognexia
 ./start.sh start
 
-# ✅ Mnemo running on http://localhost:10000
+# ✅ Cognexia running on http://localhost:10000
 ```
 
 ### 2. Store & Query
@@ -161,7 +161,7 @@ User: "Continue with Project Alpha"
 Ares: "Which project is that?"  // Lost
 ```
 
-### After (With Mnemo)
+### After (With Cognexia)
 ```javascript
 // Session 1 - Auto-detects "Project Alpha", stores to that project
 await memory.store({
@@ -234,7 +234,7 @@ Returns memories grouped by date:
 ### Control Script
 
 ```bash
-./start.sh start    # Start Mnemo
+./start.sh start    # Start Cognexia
 ./start.sh stop     # Stop server
 ./start.sh status   # Check if running
 ```
@@ -293,20 +293,20 @@ importance: 2   // Minor note
 
 ---
 
-## 🧪 Testing Mnemo
+## 🧪 Testing Cognexia
 
 ### Quick Test (5 minutes)
 
 ```bash
-# 1. Start Mnemo
-cd /path/to/Mnemo
+# 1. Start Cognexia
+cd /path/to/Cognexia
 ./start.sh start
 
 # 2. Store a test memory
 curl -X POST http://localhost:10000/api/memory/store \
   -H "Content-Type: application/json" \
   -d '{
-    "content": "Testing Mnemo memory storage - this should persist",
+    "content": "Testing Cognexia memory storage - this should persist",
     "type": "insight",
     "importance": 8,
     "project": "test"
@@ -365,7 +365,7 @@ curl -X POST http://localhost:10000/api/maintenance
 
 ## Maintenance & Cleanup
 
-Mnemo includes automatic maintenance to keep your data lake healthy.
+Cognexia includes automatic maintenance to keep your data lake healthy.
 
 ### Auto-Maintenance (Daily at 3 AM)
 ```bash
@@ -430,7 +430,7 @@ DATA_LAKE_PATH=/Volumes/External/memory ./start.sh start
 
 ## Comparison
 
-| Feature | Mnemo | Vector DB | File Storage |
+| Feature | Cognexia | Vector DB | File Storage |
 |---------|--------------|-----------|--------------|
 | Setup | 2 min | 30+ min | 5 min |
 | Cost | Free | $70+/mo | Free |
@@ -445,8 +445,8 @@ DATA_LAKE_PATH=/Volumes/External/memory ./start.sh start
 
 ```bash
 # Clone repo
-git clone https://github.com/nKOxxx/Mnemo.git
-cd Mnemo
+git clone https://github.com/nKOxxx/Cognexia.git
+cd Cognexia
 
 # Install dependencies
 npm install
@@ -490,7 +490,7 @@ MIT - Use it, fork it, build on it.
 
 ## ⭐ Star & Contribute
 
-**Star the repo:** [github.com/nKOxxx/Mnemo](https://github.com/nKOxxx/Mnemo) — helps others find it
+**Star the repo:** [github.com/nKOxxx/Cognexia](https://github.com/nKOxxx/Cognexia) — helps others find it
 
 **Open an issue:** Share your use case, report bugs, request features
 
@@ -505,7 +505,7 @@ Built by agents, for agents.
 | Contributor | Role | Contribution |
 |-------------|------|--------------|
 | **@ares_agent** | Core Developer | Architecture, SQLite optimization, query engine |
-| *You?* | — | [Open an issue](https://github.com/nKOxxx/Mnemo/issues) to get started |
+| *You?* | — | [Open an issue](https://github.com/nKOxxx/Cognexia/issues) to get started |
 
 **Want to contribute?**
 1. Fork the repo

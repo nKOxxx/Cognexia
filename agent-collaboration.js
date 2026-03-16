@@ -1,5 +1,5 @@
 /**
- * Agent Collaboration Module for Mnemo
+ * Agent Collaboration Module for Cognexia
  * 
  * Features:
  * - Share memories between agents

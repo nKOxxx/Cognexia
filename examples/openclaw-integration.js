@@ -1,19 +1,19 @@
 /**
  * OpenClaw Integration Example
- * Shows how Mnemo transforms OpenClaw sessions
+ * Shows how Cognexia transforms OpenClaw sessions
  */
 
-const Mnemo = require('../index.js');
+const Cognexia = require('../index.js');
 
 // Initialize memory for OpenClaw
-const memory = new Mnemo({
+const memory = new Cognexia({
   storage: 'sqlite',
   path: './openclaw-memory.db',
   agentId: 'agent1'  // Your OpenClaw agent name
 });
 
 // ============================================
-// BEFORE: Without Mnemo
+// BEFORE: Without Cognexia
 // ============================================
 
 class OpenClawWithoutMemory {
@@ -36,7 +36,7 @@ class OpenClawWithoutMemory {
 }
 
 // ============================================
-// AFTER: With Mnemo
+// AFTER: With Cognexia
 // ============================================
 
 class OpenClawWithMemory {
@@ -122,7 +122,7 @@ class OpenClawWithMemory {
 // ============================================
 
 async function exampleWithoutMemory() {
-  console.log('=== WITHOUT MNEMO ===\n');
+  console.log('=== WITHOUT COGNEXIA ===\n');
   
   const agent = new OpenClawWithoutMemory();
   
@@ -144,7 +144,7 @@ async function exampleWithoutMemory() {
 }
 
 async function exampleWithMemory() {
-  console.log('=== WITH MNEMO ===\n');
+  console.log('=== WITH COGNEXIA ===\n');
   
   const agent = new OpenClawWithMemory();
   
@@ -178,7 +178,7 @@ async function exampleWithMemory() {
 async function showValue() {
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║                 MNEMO VALUE DEMONSTRATION                    ║
+║                 COGNEXIA VALUE DEMONSTRATION                    ║
 ╚══════════════════════════════════════════════════════════════╝
 
 PROBLEM: The "Goldfish Problem"
@@ -206,7 +206,7 @@ PROBLEM: The "Goldfish Problem"
 ╔══════════════════════════════════════════════════════════════╗
 ║                      METRICS COMPARISON                      ║
 ╠══════════════════════════════════════════════════════════════╣
-║ Metric                    │ Without    │ With Mnemo         ║
+║ Metric                    │ Without    │ With Cognexia         ║
 ╠══════════════════════════════════════════════════════════════╣
 ║ Session Continuity        │ 0%         │ 100%               ║
 ║ Context Retention         │ ~20 msgs   │ Unlimited          ║
@@ -233,9 +233,9 @@ KEY BENEFITS FOR OPENCLAW:
    Users trust agents that remember, not ones that forget.
 
 IMPLEMENTATION:
-   npm install mnemo
+   npm install cognexia
    
-   const memory = new Mnemo();
+   const memory = new Cognexia();
    await memory.store("Important insight");
    const context = await memory.query("relevant topic");
 

@@ -1,5 +1,5 @@
 /**
- * Memory Graph Module for Mnemo
+ * Memory Graph Module for Cognexia
  * 
  * Features:
  * - Automatic relationship detection via content similarity

@@ -1,20 +1,20 @@
 /**
- * Mnemo Session Monitor
+ * Cognexia Session Monitor
  * Continuous background monitoring and recall system
  * 
  * Runs in parallel during work sessions, captures important context,
  * and enables "what did we do?" recall queries.
  */
 
-const MnemoSmartHook = require('./mnemo-smart-hook');
+const CognexiaSmartHook = require('./cognexia-smart-hook');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-class MnemoSessionMonitor {
+class CognexiaSessionMonitor {
   constructor(options = {}) {
-    this.apiUrl = options.apiUrl || process.env.MNEMO_URL || 'http://localhost:10000';
-    this.smartHook = new MnemoSmartHook(options);
+    this.apiUrl = options.apiUrl || process.env.COGNEXIA_URL || 'http://localhost:10000';
+    this.smartHook = new CognexiaSmartHook(options);
     this.currentProject = options.project || 'general';
     this.sessionId = this.generateSessionId();
     this.sessionStartTime = Date.now();
@@ -27,7 +27,7 @@ class MnemoSessionMonitor {
     this.stateFile = path.join(
       require('os').homedir(),
       '.openclaw',
-      'mnemo-session-state.json'
+      'cognexia-session-state.json'
     );
     
     // Load previous session if exists
@@ -44,11 +44,11 @@ class MnemoSessionMonitor {
         const state = JSON.parse(fs.readFileSync(this.stateFile, 'utf8'));
         if (state.currentProject) {
           this.currentProject = state.currentProject;
-          console.log(`[MnemoSession] Restored project: ${this.currentProject}`);
+          console.log(`[CognexiaSession] Restored project: ${this.currentProject}`);
         }
       }
     } catch (e) {
-      console.error('[MnemoSession] Failed to load state:', e.message);
+      console.error('[CognexiaSession] Failed to load state:', e.message);
     }
   }
   
@@ -61,7 +61,7 @@ class MnemoSessionMonitor {
       };
       fs.writeFileSync(this.stateFile, JSON.stringify(state, null, 2));
     } catch (e) {
-      console.error('[MnemoSession] Failed to save state:', e.message);
+      console.error('[CognexiaSession] Failed to save state:', e.message);
     }
   }
   
@@ -80,8 +80,8 @@ class MnemoSessionMonitor {
     // Store session start
     await this.storeSessionEvent('session_start', `Started work session on ${this.currentProject}`);
     
-    console.log(`[MnemoSession] 🟢 Started session: ${this.sessionId}`);
-    console.log(`[MnemoSession] 📁 Project: ${this.currentProject}`);
+    console.log(`[CognexiaSession] 🟢 Started session: ${this.sessionId}`);
+    console.log(`[CognexiaSession] 📁 Project: ${this.currentProject}`);
     
     return {
       sessionId: this.sessionId,
@@ -95,7 +95,7 @@ class MnemoSessionMonitor {
    */
   async processMessage(message, context = {}) {
     if (!this.isRunning) {
-      console.log('[MnemoSession] ⚠️ No active session, auto-starting...');
+      console.log('[CognexiaSession] ⚠️ No active session, auto-starting...');
       await this.startSession(context.project || 'general');
     }
     
@@ -143,7 +143,7 @@ class MnemoSessionMonitor {
       summarize = true
     } = options;
     
-    console.log(`[MnemoSession] 🔍 Recalling memories from ${timeframe}...`);
+    console.log(`[CognexiaSession] 🔍 Recalling memories from ${timeframe}...`);
     
     let days = 1;
     if (timeframe === 'week') days = 7;
@@ -170,7 +170,7 @@ class MnemoSessionMonitor {
           allResults.push(...data.results);
         }
       } catch (e) {
-        console.error('[MnemoSession] Recall query failed:', e.message);
+        console.error('[CognexiaSession] Recall query failed:', e.message);
       }
     }
     
@@ -304,7 +304,7 @@ class MnemoSessionMonitor {
         results: data.results || []
       };
     } catch (e) {
-      console.error('[MnemoSession] Search failed:', e.message);
+      console.error('[CognexiaSession] Search failed:', e.message);
       return { query, count: 0, results: [], error: e.message };
     }
   }
@@ -320,9 +320,9 @@ class MnemoSessionMonitor {
     await this.storeSessionEvent('session_end', `Session ended. ${summary.replace(/\n/g, ' ')}`);
     
     const duration = this.getSessionDuration();
-    console.log(`[MnemoSession] 🔴 Ended session: ${this.sessionId}`);
-    console.log(`[MnemoSession] ⏱️  Duration: ${duration}`);
-    console.log(`[MnemoSession] 💾 Captured: ${this.importantMemories.length} important memories`);
+    console.log(`[CognexiaSession] 🔴 Ended session: ${this.sessionId}`);
+    console.log(`[CognexiaSession] ⏱️  Duration: ${duration}`);
+    console.log(`[CognexiaSession] 💾 Captured: ${this.importantMemories.length} important memories`);
     
     return {
       sessionId: this.sessionId,
@@ -347,7 +347,7 @@ class MnemoSessionMonitor {
     this.currentProject = newProject;
     this.saveSessionState();
     
-    console.log(`[MnemoSession] 🔄 Switched to project: ${newProject}`);
+    console.log(`[CognexiaSession] 🔄 Switched to project: ${newProject}`);
     
     return { previous: this.currentProject, current: newProject };
   }
@@ -374,7 +374,7 @@ class MnemoSessionMonitor {
         })
       });
     } catch (e) {
-      console.error('[MnemoSession] Failed to store event:', e.message);
+      console.error('[CognexiaSession] Failed to store event:', e.message);
     }
   }
   
@@ -405,13 +405,13 @@ class MnemoSessionMonitor {
 }
 
 // Export for use
-module.exports = MnemoSessionMonitor;
+module.exports = CognexiaSessionMonitor;
 
 // If run directly, test
 if (require.main === module) {
-  const monitor = new MnemoSessionMonitor();
+  const monitor = new CognexiaSessionMonitor();
   
-  console.log('🧠 Mnemo Session Monitor - Test Mode\n');
+  console.log('🧠 Cognexia Session Monitor - Test Mode\n');
   console.log('=' .repeat(80));
   
   (async () => {

@@ -1,16 +1,16 @@
 /**
- * Mnemo Smart Activation Hook
+ * Cognexia Smart Activation Hook
  * Proactively stores relevant memories from all conversations
  * 
  * Usage:
- *   const MnemoSmartHook = require('./mnemo-smart-hook');
- *   const hook = new MnemoSmartHook();
+ *   const CognexiaSmartHook = require('./cognexia-smart-hook');
+ *   const hook = new CognexiaSmartHook();
  *   await hook.onMessage("New project GulfWatch", { agentId: 'ares' });
  */
 
-class MnemoSmartHook {
+class CognexiaSmartHook {
   constructor(options = {}) {
-    this.apiUrl = options.apiUrl || process.env.MNEMO_URL || 'http://localhost:10000';
+    this.apiUrl = options.apiUrl || process.env.COGNEXIA_URL || 'http://localhost:10000';
     this.threshold = options.threshold || {
       autoStore: 7,      // Auto-store without confirmation
       suggest: 5,         // Suggest storage
@@ -135,9 +135,9 @@ class MnemoSmartHook {
       if (data.projects) {
         data.projects.forEach(p => this.knownProjects.add(p.toLowerCase()));
       }
-      console.log(`[MnemoSmart] Loaded ${this.knownProjects.size} projects`);
+      console.log(`[CognexiaSmart] Loaded ${this.knownProjects.size} projects`);
     } catch (e) {
-      console.error('[MnemoSmart] Failed to load projects:', e.message);
+      console.error('[CognexiaSmart] Failed to load projects:', e.message);
     }
   }
   
@@ -253,7 +253,7 @@ class MnemoSmartHook {
   }
   
   /**
-   * Store memory to Mnemo
+   * Store memory to Cognexia
    */
   async storeMemory(message, analysis, context) {
     const memory = {
@@ -281,7 +281,7 @@ class MnemoSmartHook {
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`[MnemoSmart] ✓ Stored [${analysis.detectedType}] ${analysis.score}/10 - ${analysis.project}`);
+        console.log(`[CognexiaSmart] ✓ Stored [${analysis.detectedType}] ${analysis.score}/10 - ${analysis.project}`);
         
         // Notify if high importance
         if (this.notifications && analysis.score >= 8) {
@@ -291,11 +291,11 @@ class MnemoSmartHook {
         return { success: true, id: data.id };
       } else {
         const error = await response.text();
-        console.error('[MnemoSmart] Store failed:', error);
+        console.error('[CognexiaSmart] Store failed:', error);
         return { success: false, error };
       }
     } catch (e) {
-      console.error('[MnemoSmart] Network error:', e.message);
+      console.error('[CognexiaSmart] Network error:', e.message);
       return { success: false, error: e.message };
     }
   }
@@ -385,7 +385,7 @@ class MnemoSmartHook {
    */
   notify(message) {
     // Override this method to integrate with Telegram, console, etc.
-    console.log(`[Mnemo] ${message}`);
+    console.log(`[Cognexia] ${message}`);
     
     // If Telegram bot is available, send message
     if (this.telegramBot && this.chatId) {
@@ -403,11 +403,11 @@ class MnemoSmartHook {
 }
 
 // Export for use
-module.exports = MnemoSmartHook;
+module.exports = CognexiaSmartHook;
 
 // If run directly, test
 if (require.main === module) {
-  const hook = new MnemoSmartHook();
+  const hook = new CognexiaSmartHook();
   
   const tests = [
     { msg: "New project MoltBase - agent-native Notion competitor", ctx: {} },
@@ -422,7 +422,7 @@ if (require.main === module) {
     { msg: "Refactoring the auth middleware to use JWT", ctx: { currentProject: 'moltguard' } }
   ];
   
-  console.log('🧠 Mnemo Smart Hook - Test Mode\n');
+  console.log('🧠 Cognexia Smart Hook - Test Mode\n');
   console.log('=' .repeat(80));
   
   (async () => {

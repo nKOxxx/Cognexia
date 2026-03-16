@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
- * CLAUDE.md ↔ Mnemocode Converter
+ * CLAUDE.md ↔ Cognexiacode Converter
  * 
- * Bridges centminmod's CLAUDE.md memory bank format with Mnemo's persistence system.
- * Allows Mnemo to read/write CLAUDE.md files while maintaining mnemocode efficiency.
+ * Bridges centminmod's CLAUDE.md memory bank format with Cognexia's persistence system.
+ * Allows Cognexia to read/write CLAUDE.md files while maintaining cognexiacode efficiency.
  * 
  * Usage:
- *   ./claude-md-converter.js --to-mnemo <path/to/CLAUDE.md> > output.mnemo
- *   ./claude-md-converter.js --to-claude <path/to/memory.mnemo> > CLAUDE.md
- *   ./claude-md-converter.js --sync --claude-dir <dir> --mnemo-dir <dir>
+ *   ./claude-md-converter.js --to-cognexia <path/to/CLAUDE.md> > output.cognexia
+ *   ./claude-md-converter.js --to-claude <path/to/memory.cognexia> > CLAUDE.md
+ *   ./claude-md-converter.js --sync --claude-dir <dir> --cognexia-dir <dir>
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// Mnemocode version for compatibility
-const MNEMOCODE_VERSION = '1.1';
+// Cognexiacode version for compatibility
+const COGNEXIACODE_VERSION = '1.1';
 const CONVERTER_VERSION = '1.0.0';
 
 /**
@@ -77,13 +77,13 @@ function parseClaudeMd(content, sourceFile) {
 }
 
 /**
- * Convert memories to Mnemocode format
+ * Convert memories to Cognexiacode format
  */
-function toMnemocode(memories, options = {}) {
+function toCognexiacode(memories, options = {}) {
     const chunks = [];
     
     // Header
-    chunks.push(`## MNEMOCODE v${MNEMOCODE_VERSION}`);
+    chunks.push(`## COGNEXIACODE v${COGNEXIACODE_VERSION}`);
     chunks.push(`## Source: CLAUDE.md Converter v${CONVERTER_VERSION}`);
     chunks.push(`## Converted: ${new Date().toISOString()}`);
     chunks.push('## Format: claude-md-bridge');
@@ -100,16 +100,16 @@ function toMnemocode(memories, options = {}) {
     
     // Memory chunks
     for (const memory of memories) {
-        chunks.push(`◊MNEMO◊`);
+        chunks.push(`◊COGNEXIA◊`);
         chunks.push(`ID:${memory.id}`);
         chunks.push(`TYPE:${memory.type}`);
         chunks.push(`SRC:${memory.source}`);
-        chunks.push(`TITLE:${escapeMnemo(memory.title)}`);
+        chunks.push(`TITLE:${escapeCognexia(memory.title)}`);
         chunks.push(`TAGS:${memory.tags.join(',')}`);
         chunks.push(`PRIORITY:${memory.priority}`);
         chunks.push(`CREATED:${memory.createdAt}`);
         chunks.push(`◊BEGIN◊`);
-        chunks.push(escapeMnemo(memory.content));
+        chunks.push(escapeCognexia(memory.content));
         chunks.push(`◊END◊`);
         chunks.push('');
     }
@@ -118,9 +118,9 @@ function toMnemocode(memories, options = {}) {
 }
 
 /**
- * Parse Mnemocode back to structured memories
+ * Parse Cognexiacode back to structured memories
  */
-function parseMnemocode(content) {
+function parseCognexiacode(content) {
     const memories = [];
     const lines = content.split('\n');
     
@@ -129,10 +129,10 @@ function parseMnemocode(content) {
     let contentBuffer = [];
     
     for (const line of lines) {
-        if (line === '◊MNEMO◊') {
+        if (line === '◊COGNEXIA◊') {
             // Save previous if exists
             if (currentMemory && contentBuffer.length > 0) {
-                currentMemory.content = unescapeMnemo(contentBuffer.join('\n'));
+                currentMemory.content = unescapeCognexia(contentBuffer.join('\n'));
                 memories.push(currentMemory);
             }
             
@@ -145,7 +145,7 @@ function parseMnemocode(content) {
         } else if (line === '◊END◊') {
             // End of memory
             if (currentMemory) {
-                currentMemory.content = unescapeMnemo(contentBuffer.join('\n'));
+                currentMemory.content = unescapeCognexia(contentBuffer.join('\n'));
                 memories.push(currentMemory);
                 currentMemory = null;
                 contentBuffer = [];
@@ -160,7 +160,7 @@ function parseMnemocode(content) {
             } else if (line.startsWith('SRC:')) {
                 currentMemory.source = line.substring(4);
             } else if (line.startsWith('TITLE:')) {
-                currentMemory.title = unescapeMnemo(line.substring(6));
+                currentMemory.title = unescapeCognexia(line.substring(6));
             } else if (line.startsWith('TAGS:')) {
                 currentMemory.tags = line.substring(5).split(',').filter(t => t);
             } else if (line.startsWith('PRIORITY:')) {
@@ -188,7 +188,7 @@ function toClaudeMd(memories, options = {}) {
     sections.push('');
     sections.push('This file provides guidance to Claude Code when working with code in this repository.');
     sections.push('');
-    sections.push('> 🔄 Auto-converted from Mnemocode');
+    sections.push('> 🔄 Auto-converted from Cognexiacode');
     sections.push(`> 📅 Last sync: ${new Date().toISOString()}`);
     sections.push('');
     
@@ -216,10 +216,10 @@ function toClaudeMd(memories, options = {}) {
 }
 
 /**
- * Bidirectional sync between CLAUDE.md directory and Mnemo storage
+ * Bidirectional sync between CLAUDE.md directory and Cognexia storage
  */
-async function syncDirectories(claudeDir, mnemoDir, options = {}) {
-    console.error(`🔄 Syncing CLAUDE.md (${claudeDir}) ↔ Mnemo (${mnemoDir})`);
+async function syncDirectories(claudeDir, cognexiaDir, options = {}) {
+    console.error(`🔄 Syncing CLAUDE.md (${claudeDir}) ↔ Cognexia (${cognexiaDir})`);
     
     const results = {
         imported: 0,
@@ -232,8 +232,8 @@ async function syncDirectories(claudeDir, mnemoDir, options = {}) {
     if (!fs.existsSync(claudeDir)) {
         fs.mkdirSync(claudeDir, { recursive: true });
     }
-    if (!fs.existsSync(mnemoDir)) {
-        fs.mkdirSync(mnemoDir, { recursive: true });
+    if (!fs.existsSync(cognexiaDir)) {
+        fs.mkdirSync(cognexiaDir, { recursive: true });
     }
     
     // Read all CLAUDE*.md files
@@ -243,19 +243,19 @@ async function syncDirectories(claudeDir, mnemoDir, options = {}) {
     
     console.error(`📄 Found ${claudeFiles.length} CLAUDE.md files`);
     
-    // Import from CLAUDE.md to Mnemo
+    // Import from CLAUDE.md to Cognexia
     for (const file of claudeFiles) {
         try {
             const content = fs.readFileSync(file, 'utf8');
             const memories = parseClaudeMd(content, file);
             
-            const mnemoFile = path.join(mnemoDir, `${path.basename(file, '.md')}.mnemo`);
-            const mnemoContent = toMnemocode(memories, {
+            const cognexiaFile = path.join(cognexiaDir, `${path.basename(file, '.md')}.cognexia`);
+            const cognexiaContent = toCognexiacode(memories, {
                 project: options.project || 'claude-md-import',
                 sessionId: generateId()
             });
             
-            fs.writeFileSync(mnemoFile, mnemoContent);
+            fs.writeFileSync(cognexiaFile, cognexiaContent);
             results.imported += memories.length;
             console.error(`  ✓ ${path.basename(file)} → ${memories.length} memories`);
         } catch (err) {
@@ -264,18 +264,18 @@ async function syncDirectories(claudeDir, mnemoDir, options = {}) {
         }
     }
     
-    // Export from Mnemo back to CLAUDE.md (if bidirectional)
+    // Export from Cognexia back to CLAUDE.md (if bidirectional)
     if (options.bidirectional) {
-        const mnemoFiles = fs.readdirSync(mnemoDir)
-            .filter(f => f.endsWith('.mnemo'))
-            .map(f => path.join(mnemoDir, f));
+        const cognexiaFiles = fs.readdirSync(cognexiaDir)
+            .filter(f => f.endsWith('.cognexia'))
+            .map(f => path.join(cognexiaDir, f));
         
-        for (const file of mnemoFiles) {
+        for (const file of cognexiaFiles) {
             try {
                 const content = fs.readFileSync(file, 'utf8');
-                const memories = parseMnemocode(content);
+                const memories = parseCognexiacode(content);
                 
-                const claudeFile = path.join(claudeDir, `${path.basename(file, '.mnemo')}.md`);
+                const claudeFile = path.join(claudeDir, `${path.basename(file, '.cognexia')}.md`);
                 const claudeContent = toClaudeMd(memories);
                 
                 fs.writeFileSync(claudeFile, claudeContent);
@@ -344,13 +344,13 @@ function inferPriority(title) {
     return 3;
 }
 
-function escapeMnemo(text) {
+function escapeCognexia(text) {
     return text
         .replace(/◊/g, '\\u25CA')
         .replace(/\n/g, '\\n');
 }
 
-function unescapeMnemo(text) {
+function unescapeCognexia(text) {
     return text
         .replace(/\\u25CA/g, '◊')
         .replace(/\\n/g, '\n');
@@ -374,33 +374,33 @@ function main() {
     
     if (args.includes('--help') || args.length === 0) {
         console.log(`
-CLAUDE.md ↔ Mnemocode Converter v${CONVERTER_VERSION}
+CLAUDE.md ↔ Cognexiacode Converter v${CONVERTER_VERSION}
 
 Usage:
-  --to-mnemo <file>       Convert CLAUDE.md to Mnemocode
-  --to-claude <file>      Convert Mnemocode to CLAUDE.md
+  --to-cognexia <file>       Convert CLAUDE.md to Cognexiacode
+  --to-claude <file>      Convert Cognexiacode to CLAUDE.md
   --sync                  Bidirectional sync between directories
   --claude-dir <dir>      Source directory for CLAUDE.md files
-  --mnemo-dir <dir>       Target directory for Mnemo files
+  --cognexia-dir <dir>       Target directory for Cognexia files
   --project <name>        Project identifier
   --bidirectional         Enable two-way sync
 
 Examples:
   # Convert single file
-  ./claude-md-converter.js --to-mnemo CLAUDE.md > memories.mnemo
+  ./claude-md-converter.js --to-cognexia CLAUDE.md > memories.cognexia
   
   # Sync entire directories
-  ./claude-md-converter.js --sync --claude-dir ./memory-bank --mnemo-dir ./mnemo-store
+  ./claude-md-converter.js --sync --claude-dir ./memory-bank --cognexia-dir ./cognexia-store
 `);
         process.exit(0);
     }
     
-    const toMnemo = args.includes('--to-mnemo');
+    const toCognexia = args.includes('--to-cognexia');
     const toClaude = args.includes('--to-claude');
     const sync = args.includes('--sync');
     
-    if (toMnemo) {
-        const fileIndex = args.indexOf('--to-mnemo') + 1;
+    if (toCognexia) {
+        const fileIndex = args.indexOf('--to-cognexia') + 1;
         const file = args[fileIndex];
         
         if (!file || !fs.existsSync(file)) {
@@ -410,8 +410,8 @@ Examples:
         
         const content = fs.readFileSync(file, 'utf8');
         const memories = parseClaudeMd(content, file);
-        const mnemo = toMnemocode(memories, { project: path.basename(file, '.md') });
-        console.log(mnemo);
+        const cognexia = toCognexiacode(memories, { project: path.basename(file, '.md') });
+        console.log(cognexia);
     }
     
     if (toClaude) {
@@ -424,22 +424,22 @@ Examples:
         }
         
         const content = fs.readFileSync(file, 'utf8');
-        const memories = parseMnemocode(content);
+        const memories = parseCognexiacode(content);
         const claude = toClaudeMd(memories);
         console.log(claude);
     }
     
     if (sync) {
         const claudeDirIndex = args.indexOf('--claude-dir') + 1;
-        const mnemoDirIndex = args.indexOf('--mnemo-dir') + 1;
+        const cognexiaDirIndex = args.indexOf('--cognexia-dir') + 1;
         const projectIndex = args.indexOf('--project') + 1;
         
         const claudeDir = args[claudeDirIndex] || './memory-bank';
-        const mnemoDir = args[mnemoDirIndex] || './mnemo-store';
+        const cognexiaDir = args[cognexiaDirIndex] || './cognexia-store';
         const project = args[projectIndex] || 'claude-md-bridge';
         const bidirectional = args.includes('--bidirectional');
         
-        syncDirectories(claudeDir, mnemoDir, { project, bidirectional })
+        syncDirectories(claudeDir, cognexiaDir, { project, bidirectional })
             .then(() => process.exit(0))
             .catch(err => {
                 console.error('Sync failed:', err);
@@ -455,8 +455,8 @@ if (require.main === module) {
 // Export for use as module
 module.exports = {
     parseClaudeMd,
-    toMnemocode,
-    parseMnemocode,
+    toCognexiacode,
+    parseCognexiacode,
     toClaudeMd,
     syncDirectories
 };

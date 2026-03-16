@@ -1,4 +1,4 @@
-# Mnemo - Complete Feature List
+# Cognexia - Complete Feature List
 
 ## ✅ EXISTING FEATURES (Implemented)
 
@@ -300,7 +300,7 @@
     - "Forgotten" memories archive
 
 49. **Federated Search** 🔎
-    - Search across multiple Mnemo instances
+    - Search across multiple Cognexia instances
     - Peer-to-peer memory sharing
     - Distributed knowledge network
 
@@ -352,4 +352,4 @@
 
 ---
 
-**Summary:** Mnemo is solid at core (16 features done). Two major modules (Graph + Collaboration) are written but not wired up. Biggest gap is semantic search vs current keyword-only search.
+**Summary:** Cognexia is solid at core (16 features done). Two major modules (Graph + Collaboration) are written but not wired up. Biggest gap is semantic search vs current keyword-only search.

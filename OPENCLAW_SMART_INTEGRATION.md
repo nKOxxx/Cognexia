@@ -1,4 +1,4 @@
-# Mnemo Smart Activation - OpenClaw Integration
+# Cognexia Smart Activation - OpenClaw Integration
 
 ## Quick Setup (3 minutes)
 
@@ -6,7 +6,7 @@
 
 ```bash
 # Copy hook to OpenClaw hooks directory
-cp /path/to/Mnemo/mnemo-smart-hook.js ~/.openclaw/hooks/
+cp /path/to/Cognexia/cognexia-smart-hook.js ~/.openclaw/hooks/
 ```
 
 ### Step 2: Configure OpenClaw
@@ -15,19 +15,19 @@ cp /path/to/Mnemo/mnemo-smart-hook.js ~/.openclaw/hooks/
 // ~/.openclaw/config.json
 {
   "hooks": {
-    "messageReceived": ["mnemo-smart-hook.js"]
+    "messageReceived": ["cognexia-smart-hook.js"]
   },
-  "mnemo": {
+  "cognexia": {
     "url": "http://localhost:10000",
     "enabled": true
   }
 }
 ```
 
-### Step 3: Start Mnemo Server
+### Step 3: Start Cognexia Server
 
 ```bash
-cd /path/to/Mnemo
+cd /path/to/Cognexia
 ./start.sh start
 ```
 
@@ -35,16 +35,16 @@ cd /path/to/Mnemo
 
 Send any of these messages in your chat:
 
-- **"New project TestApp"** → Mnemo creates project and stores goal
-- **"I decided to use React"** → Mnemo stores as decision
-- **"Bug: login is broken"** → Mnemo stores as error/issue
-- **"Just shipped v1.0!"** → Mnemo stores as milestone
+- **"New project TestApp"** → Cognexia creates project and stores goal
+- **"I decided to use React"** → Cognexia stores as decision
+- **"Bug: login is broken"** → Cognexia stores as error/issue
+- **"Just shipped v1.0!"** → Cognexia stores as milestone
 
 ## How It Works
 
 ### Automatic Triggers
 
-Mnemo activates when you write:
+Cognexia activates when you write:
 
 | Trigger Type | Examples | Score | Action |
 |--------------|----------|-------|--------|
@@ -59,7 +59,7 @@ Mnemo activates when you write:
 
 ### Project Detection
 
-Mnemo automatically detects which project you're talking about:
+Cognexia automatically detects which project you're talking about:
 
 1. **Explicit**: "New project GulfWatch" → Creates/switches to gulfwatch project
 2. **Mention**: "Gulf Watch needs fixes" → Switches to gulfwatch project
@@ -78,7 +78,7 @@ Score <5:   Ignore (casual chat)
 ### Adjust Thresholds
 
 ```javascript
-const hook = new MnemoSmartHook({
+const hook = new CognexiaSmartHook({
   threshold: {
     autoStore: 7,   // Lower = more aggressive storage
     suggest: 5,     // Lower = more suggestions
@@ -89,7 +89,7 @@ const hook = new MnemoSmartHook({
 
 ### Add Custom Triggers
 
-Edit `mnemo-smart-hook.js`:
+Edit `cognexia-smart-hook.js`:
 
 ```javascript
 this.SMART_TRIGGERS.custom = {
@@ -102,7 +102,7 @@ this.SMART_TRIGGERS.custom = {
 ### Enable Telegram Notifications
 
 ```javascript
-const hook = new MnemoSmartHook();
+const hook = new CognexiaSmartHook();
 hook.setTelegramBot(telegramBot, chatId);
 ```
 
@@ -111,13 +111,13 @@ hook.setTelegramBot(telegramBot, chatId);
 Run the built-in test suite:
 
 ```bash
-cd /path/to/Mnemo
-node mnemo-smart-hook.js
+cd /path/to/Cognexia
+node cognexia-smart-hook.js
 ```
 
 Expected output:
 ```
-🧠 Mnemo Smart Hook - Test Mode
+🧠 Cognexia Smart Hook - Test Mode
 
 Message: "New project MoltBase"
 Score: 9/10 | Type: goal | Project: moltbase
@@ -136,14 +136,14 @@ Action: IGNORED
 
 ## Troubleshooting
 
-### "Mnemo server not found"
-- Make sure Mnemo is running: `./start.sh start`
+### "Cognexia server not found"
+- Make sure Cognexia is running: `./start.sh start`
 - Check URL in config: `http://localhost:10000`
 
 ### "Not storing anything"
 - Check threshold settings (may be too high)
 - Test with explicit trigger: "New project Test"
-- Check Mnemo server logs
+- Check Cognexia server logs
 
 ### "Storing too much"
 - Raise threshold: `{ threshold: { autoStore: 8 } }`
@@ -173,7 +173,7 @@ User Message
 └─────────┘  └──────────┘
     │
     ▼
-Mnemo SQLite DB
+Cognexia SQLite DB
 ```
 
 ## Benefits
@@ -186,7 +186,7 @@ Mnemo SQLite DB
 
 ## Next Steps
 
-1. Run test suite: `node mnemo-smart-hook.js`
+1. Run test suite: `node cognexia-smart-hook.js`
 2. Install in OpenClaw hooks
-3. Chat naturally - Mnemo captures important stuff automatically
+3. Chat naturally - Cognexia captures important stuff automatically
 4. Review stored memories at `http://localhost:10000`

@@ -1,9 +1,9 @@
 ---
-name: mnemo
+name: cognexia
 description: Long-term memory for AI agents with project-based Data Lake architecture. Store, query, and retrieve memories across sessions with automatic project isolation. Data stored locally in ~/.openclaw/data-lake/memory-<project>/ folders. Use when persisting information between conversations, recalling previous context, building user profiles, or maintaining project-specific memories.
 ---
 
-# Mnemo — Data Lake Edition
+# Cognexia — Data Lake Edition
 
 **Project-based long-term memory for AI agents.**
 
@@ -20,7 +20,7 @@ Data Lake Structure:
 
 ```bash
 # Start the server
-cd /path/to/Mnemo
+cd /path/to/Cognexia
 ./start.sh start
 
 # Check status
@@ -184,7 +184,7 @@ if (healthCheck.status !== 'ok') {
 
 ## GitHub
 
-**Repository:** https://github.com/nKOxxx/Mnemo
+**Repository:** https://github.com/nKOxxx/Cognexia
 
 **Version:** 2.3.0 Data Lake Edition
 

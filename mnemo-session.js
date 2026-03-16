@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /**
- * Mnemo Session Integration for OpenClaw
+ * Cognexia Session Integration for OpenClaw
  * 
  * This script enables continuous session monitoring.
  * Run it to start monitoring, then use it to recall later.
  * 
  * Usage:
- *   ./mnemo-session.js start gulfwatch    # Start monitoring project
- *   ./mnemo-session.js recall             # What did we do?
- *   ./mnemo-session.js search "vercel"    # Search memories
- *   ./mnemo-session.js status             # Current session stats
- *   ./mnemo-session.js stop               # End session
+ *   ./cognexia-session.js start gulfwatch    # Start monitoring project
+ *   ./cognexia-session.js recall             # What did we do?
+ *   ./cognexia-session.js search "vercel"    # Search memories
+ *   ./cognexia-session.js status             # Current session stats
+ *   ./cognexia-session.js stop               # End session
  */
 
-const MnemoSessionMonitor = require('./mnemo-session-monitor');
+const CognexiaSessionMonitor = require('./cognexia-session-monitor');
 const fs = require('fs');
 const path = require('path');
 
-const STATE_FILE = path.join(require('os').homedir(), '.openclaw', 'mnemo-active-session.json');
+const STATE_FILE = path.join(require('os').homedir(), '.openclaw', 'cognexia-active-session.json');
 
 function loadState() {
   try {
@@ -45,7 +45,7 @@ function clearState() {
 }
 
 async function startSession(project) {
-  const monitor = new MnemoSessionMonitor();
+  const monitor = new CognexiaSessionMonitor();
   await monitor.startSession(project);
   
   saveState({
@@ -75,11 +75,11 @@ async function startSession(project) {
 async function recallSession() {
   const state = loadState();
   if (!state) {
-    console.log('❌ No active session. Start one with: ./mnemo-session.js start <project>');
+    console.log('❌ No active session. Start one with: ./cognexia-session.js start <project>');
     return;
   }
   
-  const monitor = new MnemoSessionMonitor({ project: state.project });
+  const monitor = new CognexiaSessionMonitor({ project: state.project });
   monitor.sessionId = state.sessionId;
   monitor.sessionStartTime = state.startedAt;
   
@@ -91,7 +91,7 @@ async function searchMemories(query) {
   const state = loadState();
   const project = state?.project || 'general';
   
-  const monitor = new MnemoSessionMonitor({ project });
+  const monitor = new CognexiaSessionMonitor({ project });
   const results = await monitor.search(query, { days: 7, limit: 10 });
   
   console.log(`\n🔍 Search: "${query}"`);
@@ -140,7 +140,7 @@ async function main() {
   switch (command) {
     case 'start':
       if (!arg) {
-        console.log('Usage: ./mnemo-session.js start <project-name>');
+        console.log('Usage: ./cognexia-session.js start <project-name>');
         process.exit(1);
       }
       await startSession(arg);
@@ -153,7 +153,7 @@ async function main() {
       
     case 'search':
       if (!arg) {
-        console.log('Usage: ./mnemo-session.js search <query>');
+        console.log('Usage: ./cognexia-session.js search <query>');
         process.exit(1);
       }
       await searchMemories(arg);
@@ -171,7 +171,7 @@ async function main() {
       break;
       
     default:
-      console.log('Mnemo Session Monitor');
+      console.log('Cognexia Session Monitor');
       console.log('');
       console.log('Commands:');
       console.log('  start <project>  - Start monitoring a project');
@@ -181,9 +181,9 @@ async function main() {
       console.log('  stop             - Stop current session');
       console.log('');
       console.log('Examples:');
-      console.log('  ./mnemo-session.js start gulfwatch');
-      console.log('  ./mnemo-session.js recall');
-      console.log('  ./mnemo-session.js search "vercel"');
+      console.log('  ./cognexia-session.js start gulfwatch');
+      console.log('  ./cognexia-session.js recall');
+      console.log('  ./cognexia-session.js search "vercel"');
       process.exit(0);
   }
 }

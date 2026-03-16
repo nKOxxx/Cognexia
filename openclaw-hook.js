@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 /**
- * OpenClaw Mnemo Hook
+ * OpenClaw Cognexia Hook
  * Auto-routes memories by project, loads context at session start
  * 
- * Place in: ~/.openclaw/hooks/mnemo-hook.js
+ * Place in: ~/.openclaw/hooks/cognexia-hook.js
  * Or load via OpenClaw config
  */
 
 const http = require('http');
 
-const MNEMO_URL = 'http://localhost:10000';
+const COGNEXIA_URL = 'http://localhost:10000';
 
-class MnemoHook {
+class CognexiaHook {
   constructor() {
     this.currentProject = 'general';
     this.agentId = 'ares';
     this.enabled = true;
   }
 
-  // Check if Mnemo is running
+  // Check if Cognexia is running
   async healthCheck() {
     return new Promise((resolve) => {
-      http.get(`${MNEMO_URL}/api/health`, (res) => {
+      http.get(`${COGNEXIA_URL}/api/health`, (res) => {
         resolve(res.statusCode === 200);
       }).on('error', () => {
         resolve(false);
@@ -99,7 +99,7 @@ class MnemoHook {
     const targetProject = project || this.currentProject;
     
     return new Promise((resolve) => {
-      const url = `${MNEMO_URL}/api/memory/query?q=${encodeURIComponent(queryText)}&project=${targetProject}&limit=${limit}&days=${days}`;
+      const url = `${COGNEXIA_URL}/api/memory/query?q=${encodeURIComponent(queryText)}&project=${targetProject}&limit=${limit}&days=${days}`;
       
       http.get(url, (res) => {
         let data = '';
@@ -190,7 +190,7 @@ class MnemoHook {
   async onMessage(text) {
     if (!this.enabled) return null;
     
-    // Check if Mnemo is running
+    // Check if Cognexia is running
     const isHealthy = await this.healthCheck();
     if (!isHealthy) return null;
 
@@ -245,11 +245,11 @@ class MnemoHook {
 }
 
 // Export for OpenClaw
-module.exports = MnemoHook;
+module.exports = CognexiaHook;
 
 // If running directly, test
 if (require.main === module) {
-  const hook = new MnemoHook();
+  const hook = new CognexiaHook();
   
   // Test detection
   console.log('Testing project detection...');

@@ -1,8 +1,8 @@
 /**
- * Mnemo Crypto Module — Blind Indexing
+ * Cognexia Crypto Module — Blind Indexing
  * 
  * Client-side encryption with searchable blind indexes.
- * Mnemo server sees only encrypted content + hashes, never plaintext.
+ * Cognexia server sees only encrypted content + hashes, never plaintext.
  */
 
 const crypto = require('crypto');
@@ -15,7 +15,7 @@ const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
 // Key storage path
-const KEY_PATH = path.join(require('os').homedir(), '.openclaw', 'mnemo.key');
+const KEY_PATH = path.join(require('os').homedir(), '.openclaw', 'cognexia.key');
 
 /**
  * Generate or load encryption key
@@ -31,7 +31,7 @@ function getOrCreateKey() {
   fs.mkdirSync(path.dirname(KEY_PATH), { recursive: true });
   fs.writeFileSync(KEY_PATH, key);
   fs.chmodSync(KEY_PATH, 0o600); // Owner read/write only
-  console.log('[Mnemo Crypto] Generated new encryption key');
+  console.log('[Cognexia Crypto] Generated new encryption key');
   return key;
 }
 
@@ -129,16 +129,16 @@ function extractKeywords(content) {
  * Check if encryption is enabled
  */
 function isEncryptionEnabled() {
-  return process.env.MNEMO_ENCRYPT === '1' || fs.existsSync(KEY_PATH);
+  return process.env.COGNEXIA_ENCRYPT === '1' || fs.existsSync(KEY_PATH);
 }
 
 /**
  * Enable encryption (generate key if needed)
  */
 function enableEncryption() {
-  process.env.MNEMO_ENCRYPT = '1';
+  process.env.COGNEXIA_ENCRYPT = '1';
   getOrCreateKey();
-  console.log('[Mnemo Crypto] Encryption enabled');
+  console.log('[Cognexia Crypto] Encryption enabled');
 }
 
 module.exports = {

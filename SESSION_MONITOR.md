@@ -1,6 +1,6 @@
-# Mnemo Session Monitor - Always-On Memory System
+# Cognexia Session Monitor - Always-On Memory System
 
-Mnemo now runs **in parallel** during work sessions, continuously capturing important context and enabling **"What did we do?"** recall at any time.
+Cognexia now runs **in parallel** during work sessions, continuously capturing important context and enabling **"What did we do?"** recall at any time.
 
 ---
 
@@ -20,7 +20,7 @@ Work Session Started
 │  └─────┬──────┘  │
 │        │         │
 │  ┌─────┴──────┐  │
-│  │   Stores   │  │ ← To Mnemo database
+│  │   Stores   │  │ ← To Cognexia database
 │  │   to Disk  │  │
 │  └────────────┘  │
 └────────┬─────────┘
@@ -45,20 +45,20 @@ Work Session Started
 
 ## 🚀 Quick Start
 
-### 1. Start Mnemo Server
+### 1. Start Cognexia Server
 
 ```bash
-cd /path/to/Mnemo
+cd /path/to/Cognexia
 ./start.sh start
 ```
 
 ### 2. Initialize Session Monitor
 
 ```javascript
-const MnemoSessionMonitor = require('./mnemo-session-monitor');
+const CognexiaSessionMonitor = require('./cognexia-session-monitor');
 
 // Create monitor for your project
-const monitor = new MnemoSessionMonitor({
+const monitor = new CognexiaSessionMonitor({
   project: 'gulfwatch'  // or auto-detect
 });
 
@@ -103,8 +103,8 @@ console.log(summary);
 ### Pattern 1: OpenClaw Integration (Automatic)
 
 ```javascript
-// ~/.openclaw/hooks/mnemo-session.js
-const MnemoSessionMonitor = require('/path/to/Mnemo/mnemo-session-monitor');
+// ~/.openclaw/hooks/cognexia-session.js
+const CognexiaSessionMonitor = require('/path/to/Cognexia/cognexia-session-monitor');
 
 let monitor = null;
 
@@ -112,7 +112,7 @@ module.exports = {
   async onMessage(msg, context) {
     // Auto-start on first message
     if (!monitor) {
-      monitor = new MnemoSessionMonitor();
+      monitor = new CognexiaSessionMonitor();
       await monitor.startSession(context.project || 'general');
     }
     
@@ -138,8 +138,8 @@ module.exports = {
 ### Pattern 2: Manual Session Control
 
 ```javascript
-const MnemoSessionMonitor = require('./mnemo-session-monitor');
-const monitor = new MnemoSessionMonitor();
+const CognexiaSessionMonitor = require('./cognexia-session-monitor');
+const monitor = new CognexiaSessionMonitor();
 
 // Start working on Gulf Watch
 await monitor.startSession('gulfwatch');
@@ -166,7 +166,7 @@ await monitor.endSession();
 
 ```bash
 # Start monitor in background
-node mnemo-session-monitor.js --daemon --project=gulfwatch &
+node cognexia-session-monitor.js --daemon --project=gulfwatch &
 
 # It captures everything automatically
 # Recall anytime:
@@ -229,7 +229,7 @@ const search = await monitor.search('vercel deployment', {
 
 ```javascript
 // 9:00 AM - Start day
-const monitor = new MnemoSessionMonitor();
+const monitor = new CognexiaSessionMonitor();
 await monitor.startSession('gulfwatch');
 
 // Work through the day...
@@ -273,9 +273,9 @@ const issues = await monitor.recall({
 ## 🔧 Configuration
 
 ```javascript
-const monitor = new MnemoSessionMonitor({
+const monitor = new CognexiaSessionMonitor({
   project: 'default-project',     // Default project name
-  apiUrl: 'http://localhost:10000', // Mnemo server URL
+  apiUrl: 'http://localhost:10000', // Cognexia server URL
   recallEnabled: true,            // Enable recall features
   notifications: true             // Show notifications
 });
@@ -302,7 +302,7 @@ const monitor = new MnemoSessionMonitor({
 
 Session state is saved to:
 ```
-~/.openclaw/mnemo-session-state.json
+~/.openclaw/cognexia-session-state.json
 ```
 
 This allows:
@@ -322,7 +322,7 @@ Session Monitor
       ├─── Smart Hook (194 triggers)
       │      ├─── Scores message importance
       │      ├─── Detects project
-      │      └─── Stores to Mnemo
+      │      └─── Stores to Cognexia
       │
       └─── Session Tracking
              ├─── Buffers messages
@@ -343,4 +343,4 @@ Session Monitor
 
 ---
 
-**Ready to use:** `mnemo-session-monitor.js` ⚔️
+**Ready to use:** `cognexia-session-monitor.js` ⚔️

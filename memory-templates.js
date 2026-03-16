@@ -1,5 +1,5 @@
 /**
- * Memory Templates Module for Mnemo
+ * Memory Templates Module for Cognexia
  * 
  * Pre-built memory structures for common roles and use cases.
  * Helps users organize their memories from day one.

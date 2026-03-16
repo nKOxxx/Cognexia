@@ -1,6 +1,6 @@
-# Mnemo Trigger Words - Complete List
+# Cognexia Trigger Words - Complete List
 
-Mnemo activates (stores memories) when these words/phrases are detected in conversations.
+Cognexia activates (stores memories) when these words/phrases are detected in conversations.
 
 ## 🎯 Activation Thresholds
 
@@ -219,7 +219,7 @@ Mnemo activates (stores memories) when these words/phrases are detected in conve
 
 ## 🎯 How It Works
 
-1. **Message arrives** → Mnemo analyzes
+1. **Message arrives** → Cognexia analyzes
 2. **Check triggers** → Score each category found
 3. **Sum scores** → Calculate total importance (0-10)
 4. **Take action:**
@@ -247,7 +247,7 @@ Type: milestone (highest scoring category)
 
 ## 🔧 Customizing Triggers
 
-Add custom triggers to `mnemo-smart-hook.js`:
+Add custom triggers to `cognexia-smart-hook.js`:
 
 ```javascript
 this.SMART_TRIGGERS.blockchain = {

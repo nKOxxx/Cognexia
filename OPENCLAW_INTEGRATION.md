@@ -1,12 +1,12 @@
-# Mnemo OpenClaw Integration Guide
+# Cognexia OpenClaw Integration Guide
 
 **Auto-routing long-term memory for OpenClaw agents.**
 
 ## Quick Setup
 
-### 1. Start Mnemo Server
+### 1. Start Cognexia Server
 ```bash
-cd /path/to/Mnemo
+cd /path/to/Cognexia
 ./start.sh start
 ```
 
@@ -21,8 +21,8 @@ Add to `~/.openclaw/config.json`:
 ```json
 {
   "hooks": {
-    "messageReceived": ["mnemo-hook.js"],
-    "sessionStart": ["mnemo-hook.js"]
+    "messageReceived": ["cognexia-hook.js"],
+    "sessionStart": ["cognexia-hook.js"]
   }
 }
 ```
@@ -30,7 +30,7 @@ Add to `~/.openclaw/config.json`:
 ## How It Works
 
 ### Auto Project Detection
-Mnemo automatically detects which project you're working on:
+Cognexia automatically detects which project you're working on:
 
 ```
 "Work on Gulf Watch"         → Project: gulfwatch
@@ -40,13 +40,13 @@ Mnemo automatically detects which project you're working on:
 ```
 
 ### Context Loading
-When you switch projects, Mnemo automatically loads:
+When you switch projects, Cognexia automatically loads:
 - 📋 **Recent work** (last 7 days)
 - 🎯 **Key decisions/goals** (high importance)
 - 💡 **User preferences** (from general memory)
 
 ### Auto-Storage
-Mnemo automatically stores messages that contain:
+Cognexia automatically stores messages that contain:
 - Decisions ("I decided to...")
 - Preferences ("I prefer...")
 - Goals ("The goal is...")
@@ -58,17 +58,17 @@ Mnemo automatically stores messages that contain:
 
 ### From Agent Code
 ```javascript
-const MnemoHook = require('./openclaw-hook.js');
-const mnemo = new MnemoHook();
+const CognexiaHook = require('./openclaw-hook.js');
+const cognexia = new CognexiaHook();
 
 // Store memory
-await mnemo.store("API key updated", "security", 9, "agentvault");
+await cognexia.store("API key updated", "security", 9, "agentvault");
 
 // Query memories
-const results = await mnemo.query("security keys", "agentvault", 5);
+const results = await cognexia.query("security keys", "agentvault", 5);
 
 // Load context
-const context = await mnemo.loadContext("2ndcto");
+const context = await cognexia.loadContext("2ndcto");
 ```
 
 ### HTTP API
@@ -133,7 +133,7 @@ node openclaw-hook.js
 
 ## Troubleshooting
 
-### "Mnemo not running"
+### "Cognexia not running"
 Start the server: `./start.sh start`
 
 ### "Project not detected"
@@ -144,7 +144,7 @@ Check health: `curl http://localhost:10000/api/health`
 
 ## Version
 
-**Mnemo v2.3.0 Data Lake Edition**  
+**Cognexia v2.3.0 Data Lake Edition**  
 **OpenClaw Integration v1.0.0**
 
 ---

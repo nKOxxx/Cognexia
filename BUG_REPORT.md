@@ -1,4 +1,4 @@
-# Mnemo Bug Report & Testing Results
+# Cognexia Bug Report & Testing Results
 
 ## Date: 2026-02-24
 ## Tester: Ares
