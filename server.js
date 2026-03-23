@@ -704,6 +704,202 @@ app.get('/api/memory/timeline', async (req, res) => {
   }
 });
 
+// Update memory
+app.patch('/api/memory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content, type, importance, project } = req.body;
+    
+    if (!content && !type && !importance) {
+      return res.status(400).json(errorResponse('At least one field required to update'));
+    }
+    
+    const db = await getDb(project || 'general');
+    
+    // First check if memory exists
+    const memory = await new Promise((resolve, reject) => {
+      db.get('SELECT * FROM memories WHERE id = ? AND deleted_at IS NULL', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!memory) {
+      db.close();
+      return res.status(404).json(errorResponse('Memory not found'));
+    }
+    
+    const updates = [];
+    const params = [];
+    
+    if (content !== undefined) {
+      updates.push('content = ?');
+      params.push(content);
+    }
+    if (type !== undefined) {
+      updates.push('content_type = ?');
+      params.push(type);
+    }
+    if (importance !== undefined) {
+      updates.push('importance = ?');
+      params.push(Math.min(10, Math.max(1, parseInt(importance))));
+    }
+    
+    updates.push('updated_at = ?');
+    params.push(new Date().toISOString());
+    params.push(id);
+    
+    await new Promise((resolve, reject) => {
+      const sql = `UPDATE memories SET ${updates.join(', ')} WHERE id = ?`;
+      db.run(sql, params, function(err) {
+        db.close();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    res.json(successResponse({ id, updated: true }));
+  } catch (err) {
+    console.error('[Update Error]', err);
+    res.status(500).json(errorResponse(err.message, 'UPDATE_ERROR'));
+  }
+});
+
+// Delete memory (soft delete)
+app.delete('/api/memory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    
+    // Check if memory exists
+    const memory = await new Promise((resolve, reject) => {
+      db.get('SELECT * FROM memories WHERE id = ? AND deleted_at IS NULL', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!memory) {
+      db.close();
+      return res.status(404).json(errorResponse('Memory not found'));
+    }
+    
+    // Soft delete
+    await new Promise((resolve, reject) => {
+      db.run('UPDATE memories SET deleted_at = ? WHERE id = ?', [new Date().toISOString(), id], function(err) {
+        db.close();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    res.json(successResponse({ id, deleted: true }));
+  } catch (err) {
+    console.error('[Delete Error]', err);
+    res.status(500).json(errorResponse(err.message, 'DELETE_ERROR'));
+  }
+});
+
+// Bulk delete memories
+app.post('/api/memory/bulk-delete', async (req, res) => {
+  try {
+    const { ids, project } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json(errorResponse('ids array required'));
+    }
+    
+    const db = await getDb(project || 'general');
+    const now = new Date().toISOString();
+    
+    await new Promise((resolve, reject) => {
+      const placeholders = ids.map(() => '?').join(',');
+      db.run(`UPDATE memories SET deleted_at = ? WHERE id IN (${placeholders})`, [now, ...ids], function(err) {
+        db.close();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    res.json(successResponse({ deleted: ids.length, ids }));
+  } catch (err) {
+    console.error('[Bulk Delete Error]', err);
+    res.status(500).json(errorResponse(err.message, 'BULK_DELETE_ERROR'));
+  }
+});
+
+// Merge memories
+app.post('/api/memory/merge', async (req, res) => {
+  try {
+    const { ids, project } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length < 2) {
+      return res.status(400).json(errorResponse('At least 2 memory IDs required to merge'));
+    }
+    
+    const db = await getDb(project || 'general');
+    
+    // Get all memories to merge
+    const memories = await new Promise((resolve, reject) => {
+      const placeholders = ids.map(() => '?').join(',');
+      db.all(`SELECT * FROM memories WHERE id IN (${placeholders}) AND deleted_at IS NULL`, ids, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+    
+    if (memories.length < 2) {
+      db.close();
+      return res.status(400).json(errorResponse('Need at least 2 valid memories to merge'));
+    }
+    
+    // Merge content with separator
+    const mergedContent = memories.map(m => `[${m.content_type.toUpperCase()}] ${m.content}`).join('\n\n---\n\n');
+    
+    // Use highest importance from the group
+    const maxImportance = Math.max(...memories.map(m => m.importance));
+    
+    // Use most recent created_at
+    const earliestCreated = memories.reduce((min, m) => m.created_at < min ? m.created_at : min, memories[0].created_at);
+    
+    // Create new merged memory
+    const newId = generateId();
+    const now = new Date().toISOString();
+    
+    await new Promise((resolve, reject) => {
+      const stmt = db.prepare(`
+        INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run([newId, 'merged', mergedContent, 'insight', maxImportance, project || 'general', JSON.stringify({ merged_from: ids }), earliestCreated], function(err) {
+        stmt.finalize();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    // Soft delete original memories
+    await new Promise((resolve, reject) => {
+      const placeholders = ids.map(() => '?').join(',');
+      db.run(`UPDATE memories SET deleted_at = ? WHERE id IN (${placeholders})`, [now, ...ids], function(err) {
+        db.close();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    res.json(successResponse({ 
+      id: newId, 
+      merged: ids.length,
+      content_preview: mergedContent.substring(0, 100) + '...'
+    }));
+  } catch (err) {
+    console.error('[Merge Error]', err);
+    res.status(500).json(errorResponse(err.message, 'MERGE_ERROR'));
+  }
+});
+
 // Query across ALL projects (cascading search)
 app.get('/api/memory/query-all', async (req, res) => {
   try {

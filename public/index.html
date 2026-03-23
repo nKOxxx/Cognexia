@@ -5,1147 +5,244 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cognexia — Memory Browser</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #12121a;
-      --bg-tertiary: #1a1a24;
-      --bg-card: #15151f;
-      --border: #2a2a3e;
-      --border-light: #3a3a4e;
-      --text-primary: #e0e0e0;
-      --text-secondary: #888;
-      --text-muted: #555;
-      --accent: #667eea;
-      --accent-hover: #7b8ff0;
-      --red: #e74c3c;
-      --yellow: #f39c12;
-      --green: #27ae60;
-      --red-bg: rgba(231, 76, 60, 0.15);
-      --yellow-bg: rgba(243, 156, 18, 0.15);
-      --green-bg: rgba(39, 174, 96, 0.15);
-      --sidebar-width: 260px;
-      --topbar-height: 56px;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      height: 100vh;
-      overflow: hidden;
-    }
-    
-    /* Layout */
-    .app {
-      display: flex;
-      height: 100vh;
-    }
-    
-    /* Sidebar */
-    .sidebar {
-      width: var(--sidebar-width);
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-    
-    .sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    
-    .sidebar-header h1 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .sidebar-header p {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-    
-    .sidebar-section {
-      padding: 12px;
-    }
-    
-    .sidebar-section-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      padding: 0 4px;
-    }
-    
-    .project-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 8px;
-    }
-    
-    .project-item {
-      display: flex;
-      align-items: center;
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-      gap: 10px;
-    }
-    
-    .project-item:hover {
-      background: var(--bg-tertiary);
-    }
-    
-    .project-item.active {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-light);
-    }
-    
-    .project-icon {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      opacity: 0.8;
-    }
-    
-    .project-name {
-      flex: 1;
-      font-size: 0.875rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .project-count {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      background: var(--bg-primary);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    
-    /* Main Content */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-    
-    /* Top Bar */
-    .topbar {
-      height: var(--topbar-height);
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 16px;
-    }
-    
-    .search-container {
-      flex: 1;
-      max-width: 500px;
-      position: relative;
-    }
-    
-    .search-input {
-      width: 100%;
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px 8px 36px;
-      font-size: 0.875rem;
-      color: var(--text-primary);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    
-    .search-input:focus {
-      border-color: var(--accent);
-    }
-    
-    .search-input::placeholder {
-      color: var(--text-muted);
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-    
-    .topbar-actions {
-      display: flex;
-      gap: 8px;
-    }
-    
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .btn:hover {
-      background: var(--bg-card);
-      border-color: var(--border-light);
-    }
-    
-    .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-    }
-    
-    /* Content Area */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-    }
-    
-    /* View Headers */
-    .view-header {
-      margin-bottom: 24px;
-    }
-    
-    .view-header h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-    
-    .view-header p {
-      color: var(--text-secondary);
-      margin-top: 4px;
-      font-size: 0.875rem;
-    }
-    
-    /* Timeline */
-    .timeline {
-      max-width: 800px;
-    }
-    
-    .timeline-date {
-      margin-bottom: 24px;
-    }
-    
-    .timeline-date-header {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .timeline-date-header .date {
-      color: var(--text-primary);
-    }
-    
-    .memory-grid {
-      display: grid;
-      gap: 12px;
-    }
-    
-    /* Memory Card */
-    .memory-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      transition: border-color 0.15s, transform 0.15s;
-    }
-    
-    .memory-card:hover {
-      border-color: var(--border-light);
-      transform: translateY(-1px);
-    }
-    
-    .memory-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    
-    .memory-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .memory-type {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: var(--bg-tertiary);
-      color: var(--text-secondary);
-    }
-    
-    .memory-importance {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-    
-    .importance-high {
-      background: var(--red-bg);
-      color: var(--red);
-    }
-    
-    .importance-medium {
-      background: var(--yellow-bg);
-      color: var(--yellow);
-    }
-    
-    .importance-low {
-      background: var(--green-bg);
-      color: var(--green);
-    }
-    
-    .memory-time {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    
-    .memory-content {
-      font-size: 0.9rem;
-      line-height: 1.6;
-      color: var(--text-primary);
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    .memory-content.expanded {
-      -webkit-line-clamp: unset;
-    }
-    
-    .expand-btn {
-      background: none;
-      border: none;
-      color: var(--accent);
-      font-size: 0.8rem;
-      cursor: pointer;
-      padding: 4px 0;
-      margin-top: 8px;
-    }
-    
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-secondary);
-    }
-    
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-    
-    .empty-state h3 {
-      font-size: 1.25rem;
-      margin-bottom: 8px;
-      color: var(--text-primary);
-    }
-    
-    .empty-state p {
-      margin-bottom: 20px;
-    }
-    
-    /* Loading */
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
-    
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.2s, visibility 0.2s;
-    }
-    
-    .modal-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-    
-    .modal {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-      transform: scale(0.95);
-      transition: transform 0.2s;
-    }
-    
-    .modal-overlay.active .modal {
-      transform: scale(1);
-    }
-    
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .modal-header h3 {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-    
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px;
-      line-height: 1;
-    }
-    
-    .modal-close:hover {
-      color: var(--text-primary);
-    }
-    
-    .modal-body {
-      padding: 20px;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: var(--text-secondary);
-    }
-    
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 0.875rem;
-      color: var(--text-primary);
-      outline: none;
-      font-family: inherit;
-      transition: border-color 0.15s;
-    }
-    
-    .form-group textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-    
-    .form-group textarea:focus,
-    .form-group select:focus {
-      border-color: var(--accent);
-    }
-    
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    
-    .slider-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .slider-group input[type="range"] {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 6px;
-      background: var(--bg-primary);
-      border-radius: 3px;
-      outline: none;
-    }
-    
-    .slider-group input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      background: var(--accent);
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    
-    .slider-value {
-      min-width: 24px;
-      text-align: center;
-      font-weight: 600;
-      color: var(--accent);
-    }
-    
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    
-    /* Search Results */
-    .search-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-top: 4px;
-      max-height: 400px;
-      overflow-y: auto;
-      z-index: 50;
-      display: none;
-    }
-    
-    .search-results.active {
-      display: block;
-    }
-    
-    .search-result-item {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    
-    .search-result-item:last-child {
-      border-bottom: none;
-    }
-    
-    .search-result-item:hover {
-      background: var(--bg-tertiary);
-    }
-    
-    .search-result-content {
-      font-size: 0.875rem;
-      line-height: 1.5;
-      margin-bottom: 6px;
-    }
-    
-    .search-result-meta {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    
-    /* Stats */
-    .stats-bar {
-      display: flex;
-      gap: 24px;
-      margin-bottom: 20px;
-      padding: 12px 16px;
-      background: var(--bg-card);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-    
-    .stat {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .stat-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--accent);
-    }
-    
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--border-light);
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        left: -100%;
-        z-index: 50;
-        transition: left 0.3s;
-      }
-      
-      .sidebar.open {
-        left: 0;
-      }
-      
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--bg-tertiary:#1a1a24;--bg-card:#15151f;--border:#2a2a3e;--border-light:#3a3a4e;--text-primary:#e0e0e0;--text-secondary:#888;--text-muted:#555;--accent:#667eea;--accent-hover:#7b8ff0;--red:#e74c3c;--yellow:#f39c12;--green:#27ae60;--red-bg:rgba(231,76,60,0.15);--yellow-bg:rgba(243,156,18,0.15);--green-bg:rgba(39,174,96,0.15);--sidebar-width:260px;--topbar-height:56px}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;overflow:hidden}
+    .app{display:flex;height:100vh}
+    .sidebar{width:var(--sidebar-width);background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+    .sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+    .sidebar-header h1{font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .sidebar-header p{font-size:0.75rem;color:var(--text-muted);margin-top:4px}
+    .sidebar-section{padding:12px}
+    .sidebar-section-title{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;padding:0 4px}
+    .project-list{flex:1;overflow-y:auto;padding:0 8px}
+    .project-item{display:flex;align-items:center;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.15s;gap:10px}
+    .project-item:hover{background:var(--bg-tertiary)}
+    .project-item.active{background:var(--bg-tertiary);border:1px solid var(--border-light)}
+    .project-icon{width:20px;height:20px;border-radius:4px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;opacity:0.8}
+    .project-name{flex:1;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .main{flex:1;display:flex;flex-direction:column;min-width:0}
+    .topbar{height:var(--topbar-height);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px}
+    .search-container{flex:1;max-width:500px;position:relative}
+    .search-input{width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 36px;font-size:0.875rem;color:var(--text-primary);outline:none;transition:border-color 0.15s}
+    .search-input:focus{border-color:var(--accent)}
+    .search-input::placeholder{color:var(--text-muted)}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+    .topbar-actions{display:flex;gap:8px}
+    .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:0.875rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:6px}
+    .btn:hover{background:var(--bg-card);border-color:var(--border-light)}
+    .btn-primary{background:var(--accent);border-color:var(--accent)}
+    .btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+    .btn-danger{background:var(--red);border-color:var(--red)}
+    .btn-danger:hover{background:#c0392b;border-color:#c0392b}
+    .content{flex:1;overflow-y:auto;padding:24px}
+    .view-header{margin-bottom:24px}
+    .view-header h2{font-size:1.5rem;font-weight:600}
+    .view-header p{color:var(--text-secondary);margin-top:4px;font-size:0.875rem}
+    .filter-bar{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding:16px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border)}
+    .filter-group{display:flex;align-items:center;gap:8px}
+    .filter-label{font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em}
+    .filter-select{background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);cursor:pointer;outline:none}
+    .filter-select:focus{border-color:var(--accent)}
+    .bulk-actions{display:none;align-items:center;gap:12px;padding:12px 16px;margin-bottom:16px;background:rgba(102,126,234,0.1);border-radius:10px;border:1px solid var(--accent)}
+    .bulk-actions.visible{display:flex}
+    .bulk-count{font-size:0.875rem;color:var(--accent);font-weight:500}
+    .timeline{max-width:800px}
+    .timeline-date{margin-bottom:24px}
+    .timeline-date-header{font-size:0.875rem;font-weight:600;color:var(--text-secondary);padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .timeline-date-header .date{color:var(--text-primary)}
+    .memory-grid{display:grid;gap:12px}
+    .memory-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.15s,transform 0.15s;position:relative}
+    .memory-card:hover{border-color:var(--border-light);transform:translateY(-1px)}
+    .memory-card.selected{border-color:var(--accent);background:rgba(102,126,234,0.05)}
+    .memory-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .memory-meta{display:flex;align-items:center;gap:8px}
+    .memory-checkbox{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);background:var(--bg-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;margin-right:8px}
+    .memory-checkbox:hover{border-color:var(--accent)}
+    .memory-checkbox.checked{background:var(--accent);border-color:var(--accent)}
+    .memory-checkbox.checked::after{content:'✓';color:white;font-size:12px;font-weight:bold}
+    .memory-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.03em;padding:3px 8px;border-radius:4px;background:var(--bg-tertiary);color:var(--text-secondary)}
+    .memory-importance{font-size:0.7rem;font-weight:600;padding:3px 8px;border-radius:4px}
+    .importance-high{background:var(--red-bg);color:var(--red)}
+    .importance-medium{background:var(--yellow-bg);color:var(--yellow)}
+    .importance-low{background:var(--green-bg);color:var(--green)}
+    .memory-time{font-size:0.75rem;color:var(--text-muted)}
+    .memory-content{font-size:0.9rem;line-height:1.6;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .memory-content.expanded{-webkit-line-clamp:unset}
+    .memory-actions{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+    .action-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-secondary);font-size:0.75rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:4px}
+    .action-btn:hover{border-color:var(--border-light);color:var(--text-primary)}
+    .action-btn.delete:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+    .action-btn.copy:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+    .expand-btn{background:none;border:none;color:var(--accent);font-size:0.8rem;cursor:pointer;padding:4px 0;margin-top:8px}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
+    .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:0.5}
+    .empty-state h3{font-size:1.25rem;margin-bottom:8px;color:var(--text-primary)}
+    .empty-state p{margin-bottom:20px}
+    .loading{display:flex;align-items:center;justify-content:center;padding:40px}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;visibility:hidden;transition:opacity 0.2s,visibility 0.2s}
+    .modal-overlay.active{opacity:1;visibility:visible}
+    .modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;transform:scale(0.95);transition:transform 0.2s}
+    .modal-overlay.active .modal{transform:scale(1)}
+    .modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-header h3{font-size:1.1rem;font-weight:600}
+    .modal-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+    .modal-close:hover{color:var(--text-primary)}
+    .modal-body{padding:20px}
+    .form-group{margin-bottom:20px}
+    .form-group label{display:block;font-size:0.8rem;font-weight:500;margin-bottom:8px;color:var(--text-secondary)}
+    .form-group textarea,.form-group select{width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.875rem;color:var(--text-primary);outline:none;font-family:inherit;transition:border-color 0.15s}
+    .form-group textarea{min-height:120px;resize:vertical}
+    .form-group textarea:focus,.form-group select:focus{border-color:var(--accent)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .slider-group{display:flex;align-items:center;gap:12px}
+    .slider-group input[type=range]{flex:1;-webkit-appearance:none;height:6px;background:var(--bg-primary);border-radius:3px;outline:none}
+    .slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
+    .slider-value{min-width:24px;text-align:center;font-weight:600;color:var(--accent)}
+    .modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+    .modal-footer.center{justify-content:center}
+    .confirm-modal .modal{max-width:400px}
+    .confirm-message{text-align:center;font-size:1rem;color:var(--text-primary);margin-bottom:8px}
+    .confirm-submessage{text-align:center;font-size:0.875rem;color:var(--text-secondary)}
+    .search-results{position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:400px;overflow-y:auto;z-index:50;display:none}
+    .search-results.active{display:block}
+    .search-result-item{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
+    .search-result-item:last-child{border-bottom:none}
+    .search-result-item:hover{background:var(--bg-tertiary)}
+    .search-result-content{font-size:0.875rem;line-height:1.5;margin-bottom:6px}
+    .search-result-meta{font-size:0.75rem;color:var(--text-muted)}
+    .stats-bar{display:flex;gap:24px;margin-bottom:20px;padding:12px 16px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)}
+    .stat{display:flex;align-items:center;gap:8px}
+    .stat-value{font-size:1.1rem;font-weight:600;color:var(--accent)}
+    .stat-label{font-size:0.8rem;color:var(--text-muted)}
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
+    .toast{padding:12px 20px;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);font-size:0.875rem;animation:toastIn 0.3s ease;display:flex;align-items:center;gap:8px}
+    .toast.success{border-color:var(--green);background:var(--green-bg)}
+    .toast.error{border-color:var(--red);background:var(--red-bg)}
+    @keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+    @media(max-width:768px){.form-row{grid-template-columns:1fr}.filter-bar{flex-direction:column}}
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h1>Cognexia</h1>
-        <p>Memory Browser</p>
-      </div>
-      
-      <div class="sidebar-section">
-        <button class="btn btn-primary" id="newMemoryBtn" style="width: 100%;">
-          + New Memory
-        </button>
-      </div>
-      
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Projects</div>
-      </div>
-      
-      <div class="project-list" id="projectList">
-        <!-- Projects loaded dynamically -->
-      </div>
+      <div class="sidebar-header"><h1>Cognexia</h1><p>Memory Browser</p></div>
+      <div class="sidebar-section"><button class="btn btn-primary" id="newMemoryBtn" style="width:100%">+ New Memory</button></div>
+      <div class="sidebar-section"><div class="sidebar-section-title">Projects</div></div>
+      <div class="project-list" id="projectList"></div>
     </aside>
-    
-    <!-- Main Content -->
     <main class="main">
-      <!-- Top Bar -->
       <div class="topbar">
         <div class="search-container">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="searchInput" placeholder="Search memories... (Cmd+K)">
           <div class="search-results" id="searchResults"></div>
         </div>
-        
-        <div class="topbar-actions">
-          <button class="btn" id="timelineViewBtn" title="Timeline View">
-            📅 Timeline
-          </button>
-        </div>
+        <div class="topbar-actions"><button class="btn" id="timelineViewBtn">📅 Timeline</button></div>
       </div>
-      
-      <!-- Content -->
-      <div class="content" id="content">
-        <div class="loading" id="loading">
-          <div class="spinner"></div>
-        </div>
-      </div>
+      <div class="content" id="content"><div class="loading" id="loading"><div class="spinner"></div></div></div>
     </main>
   </div>
   
-  <!-- Add Memory Modal -->
   <div class="modal-overlay" id="memoryModal">
     <div class="modal">
-      <div class="modal-header">
-        <h3>Add New Memory</h3>
-        <button class="modal-close" id="closeModal">&times;</button>
-      </div>
+      <div class="modal-header"><h3 id="memoryModalTitle">Add New Memory</h3><button class="modal-close" id="closeModal">×</button></div>
       <div class="modal-body">
         <form id="memoryForm">
-          <div class="form-group">
-            <label for="memoryContent">Content</label>
-            <textarea id="memoryContent" placeholder="What do you want to remember?" required></textarea>
-          </div>
-          
+          <input type="hidden" id="editMemoryId" value="">
+          <div class="form-group"><label for="memoryContent">Content</label><textarea id="memoryContent" placeholder="What do you want to remember?" required></textarea></div>
           <div class="form-row">
-            <div class="form-group">
-              <label for="memoryType">Type</label>
-              <select id="memoryType">
-                <option value="insight">Insight</option>
-                <option value="preference">Preference</option>
-                <option value="error">Error</option>
-                <option value="goal">Goal</option>
-                <option value="milestone">Milestone</option>
-                <option value="security">Security</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label for="memoryProject">Project</label>
-              <select id="memoryProject">
-                <!-- Projects loaded dynamically -->
-              </select>
-            </div>
+            <div class="form-group"><label for="memoryType">Type</label><select id="memoryType"><option value="insight">Insight</option><option value="preference">Preference</option><option value="error">Error</option><option value="goal">Goal</option><option value="milestone">Milestone</option><option value="security">Security</option></select></div>
+            <div class="form-group"><label for="memoryProject">Project</label><select id="memoryProject"></select></div>
           </div>
-          
-          <div class="form-group">
-            <label for="memoryImportance">Importance (1-10)</label>
-            <div class="slider-group">
-              <input type="range" id="memoryImportance" min="1" max="10" value="5">
-              <span class="slider-value" id="importanceValue">5</span>
-            </div>
-          </div>
+          <div class="form-group"><label for="memoryImportance">Importance (1-10)</label><div class="slider-group"><input type="range" id="memoryImportance" min="1" max="10" value="5"><span class="slider-value" id="importanceValue">5</span></div></div>
         </form>
       </div>
-      <div class="modal-footer">
-        <button class="btn" id="cancelMemory">Cancel</button>
-        <button class="btn btn-primary" id="saveMemory">Save Memory</button>
-      </div>
+      <div class="modal-footer"><button class="btn" id="cancelMemory">Cancel</button><button class="btn btn-primary" id="saveMemory">Save Memory</button></div>
     </div>
   </div>
 
-  <script>
-    // State
-    let currentProject = 'general';
-    let projects = [];
-    let searchTimeout = null;
-    
-    // DOM Elements
-    const projectList = document.getElementById('projectList');
-    const content = document.getElementById('content');
-    const loading = document.getElementById('loading');
-    const searchInput = document.getElementById('searchInput');
-    const searchResults = document.getElementById('searchResults');
-    const memoryModal = document.getElementById('memoryModal');
-    const memoryForm = document.getElementById('memoryForm');
-    const importanceSlider = document.getElementById('memoryImportance');
-    const importanceValue = document.getElementById('importanceValue');
-    const memoryProjectSelect = document.getElementById('memoryProject');
-    
-    // API Helpers
-    async function api(endpoint, options = {}) {
-      const res = await fetch(`/api${endpoint}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error);
-      return json.data;
-    }
-    
-    // Get importance class
-    function getImportanceClass(importance) {
-      if (importance >= 8) return 'importance-high';
-      if (importance >= 5) return 'importance-medium';
-      return 'importance-low';
-    }
-    
-    // Format date
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diff = now - date;
-      
-      if (diff < 86400000) return 'Today';
-      if (diff < 172800000) return 'Yesterday';
-      
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
-    
-    // Format time
-    function formatTime(dateStr) {
-      return new Date(dateStr).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit'
-      });
-    }
-    
-    // Format relative time
-    function formatRelative(dateStr) {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diff = now - date;
-      const mins = Math.floor(diff / 60000);
-      const hours = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-      
-      if (mins < 1) return 'Just now';
-      if (mins < 60) return `${mins}m ago`;
-      if (hours < 24) return `${hours}h ago`;
-      if (days < 7) return `${days}d ago`;
-      return formatDate(dateStr);
-    }
-    
-    // Truncate text
-    function truncate(text, maxLen = 200) {
-      if (text.length <= maxLen) return text;
-      return text.substring(0, maxLen).trim() + '...';
-    }
-    
-    // Load projects
-    async function loadProjects() {
-      try {
-        const data = await api('/projects');
-        projects = data.projects || [];
-        
-        // Ensure general exists
-        if (!projects.includes('general')) {
-          projects.unshift('general');
-        }
-        
-        renderProjectList();
-        renderProjectSelect();
-      } catch (err) {
-        console.error('Failed to load projects:', err);
-        projects = ['general'];
-        renderProjectList();
-      }
-    }
-    
-    // Render project list
-    function renderProjectList() {
-      projectList.innerHTML = projects.map(project => `
-        <div class="project-item ${project === currentProject ? 'active' : ''}" data-project="${project}">
-          <div class="project-icon">📁</div>
-          <span class="project-name">${project}</span>
-        </div>
-      `).join('');
-      
-      // Add click handlers
-      projectList.querySelectorAll('.project-item').forEach(item => {
-        item.addEventListener('click', () => {
-          currentProject = item.dataset.project;
-          renderProjectList();
-          loadTimeline();
-        });
-      });
-    }
-    
-    // Render project select in modal
-    function renderProjectSelect() {
-      memoryProjectSelect.innerHTML = projects.map(project => 
-        `<option value="${project}" ${project === currentProject ? 'selected' : ''}>${project}</option>`
-      ).join('');
-    }
-    
-    // Load timeline
-    async function loadTimeline() {
-      content.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-      
-      try {
-        const data = await api(`/memory/timeline?project=${encodeURIComponent(currentProject)}&days=30`);
-        const timeline = data.timeline || {};
-        const dates = Object.keys(timeline).sort((a, b) => new Date(b) - new Date(a));
-        
-        if (dates.length === 0) {
-          content.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">🧠</div>
-              <h3>No memories yet</h3>
-              <p>Start building your knowledge base by adding your first memory.</p>
-              <button class="btn btn-primary" onclick="openMemoryModal()">+ Add First Memory</button>
-            </div>
-          `;
-          return;
-        }
-        
-        let totalMemories = 0;
-        dates.forEach(d => totalMemories += timeline[d].length);
-        
-        let html = `
-          <div class="view-header">
-            <h2>Timeline</h2>
-            <p>${totalMemories} memories in ${dates.length} days</p>
-          </div>
-          
-          <div class="stats-bar">
-            <div class="stat">
-              <span class="stat-value">${dates.length}</span>
-              <span class="stat-label">Days</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">${totalMemories}</span>
-              <span class="stat-label">Memories</span>
-            </div>
-          </div>
-          
-          <div class="timeline">
-        `;
-        
-        dates.forEach(date => {
-          const memories = timeline[date];
-          html += `
-            <div class="timeline-date">
-              <div class="timeline-date-header">
-                <span class="date">${formatDate(date)}</span>
-                <span>${memories.length} memories</span>
-              </div>
-              <div class="memory-grid">
-          `;
-          
-          memories.forEach(memory => {
-            html += renderMemoryCard(memory);
-          });
-          
-          html += '</div></div>';
-        });
-        
-        html += '</div>';
-        content.innerHTML = html;
-        
-        // Add expand handlers
-        content.querySelectorAll('.expand-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const contentEl = btn.previousElementSibling;
-            contentEl.classList.toggle('expanded');
-            btn.textContent = contentEl.classList.contains('expanded') ? 'Show less' : 'Show more';
-          });
-        });
-        
-      } catch (err) {
-        console.error('Failed to load timeline:', err);
-        content.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">⚠️</div>
-            <h3>Failed to load memories</h3>
-            <p>${err.message}</p>
-          </div>
-        `;
-      }
-    }
-    
-    // Render memory card
-    function renderMemoryCard(memory) {
-      const impClass = getImportanceClass(memory.importance);
-      const needsExpand = memory.content.length > 200;
-      
-      return `
-        <div class="memory-card" data-id="${memory.id}">
-          <div class="memory-card-header">
-            <div class="memory-meta">
-              <span class="memory-type">${memory.content_type}</span>
-              <span class="memory-importance ${impClass}">${memory.importance}/10</span>
-            </div>
-            <span class="memory-time">${formatTime(memory.created_at)}</span>
-          </div>
-          <div class="memory-content">${escapeHtml(memory.content)}</div>
-          ${needsExpand ? '<button class="expand-btn">Show more</button>' : ''}
-        </div>
-      `;
-    }
-    
-    // Escape HTML
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-    
-    // Search
-    async function performSearch(query) {
-      if (!query.trim()) {
-        searchResults.classList.remove('active');
-        return;
-      }
-      
-      try {
-        const data = await api(`/memory/query?q=${encodeURIComponent(query)}&project=${encodeURIComponent(currentProject)}&limit=10`);
-        const results = data.results || [];
-        
-        if (results.length === 0) {
-          searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
-        } else {
-          searchResults.innerHTML = results.map(r => `
-            <div class="search-result-item" data-id="${r.id}">
-              <div class="search-result-content">${escapeHtml(truncate(r.content, 150))}</div>
-              <div class="search-result-meta">${r.content_type} • ${formatRelative(r.created_at)}</div>
-            </div>
-          `).join('');
-          
-          searchResults.querySelectorAll('.search-result-item[data-id]').forEach(item => {
-            item.addEventListener('click', () => {
-              searchResults.classList.remove('active');
-              searchInput.value = '';
-              // Could open detail view here
-            });
-          });
-        }
-        
-        searchResults.classList.add('active');
-      } catch (err) {
-        console.error('Search failed:', err);
-      }
-    }
-    
-    // Modal handling
-    function openMemoryModal() {
-      renderProjectSelect();
-      memoryModal.classList.add('active');
-      document.getElementById('memoryContent').focus();
-    }
-    
-    function closeMemoryModal() {
-      memoryModal.classList.remove('active');
-      memoryForm.reset();
-      importanceSlider.value = 5;
-      importanceValue.textContent = '5';
-    }
-    
-    // Save memory
-    async function saveMemory() {
-      const content = document.getElementById('memoryContent').value.trim();
-      if (!content) return;
-      
-      const data = {
-        content,
-        type: document.getElementById('memoryType').value,
-        project: memoryProjectSelect.value,
-        importance: parseInt(importanceSlider.value)
-      };
-      
-      try {
-        await api('/memory/store', {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-        
-        closeMemoryModal();
-        loadTimeline();
-        
-        // Refresh projects in case a new one was created
-        loadProjects();
-      } catch (err) {
-        alert('Failed to save memory: ' + err.message);
-      }
-    }
-    
-    // Event Listeners
-    document.getElementById('newMemoryBtn').addEventListener('click', openMemoryModal);
-    document.getElementById('closeModal').addEventListener('click', closeMemoryModal);
-    document.getElementById('cancelMemory').addEventListener('click', closeMemoryModal);
-    document.getElementById('saveMemory').addEventListener('click', saveMemory);
-    
-    memoryModal.addEventListener('click', (e) => {
-      if (e.target === memoryModal) closeMemoryModal();
-    });
-    
-    importanceSlider.addEventListener('input', () => {
-      importanceValue.textContent = importanceSlider.value;
-    });
-    
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        performSearch(searchInput.value);
-      }, 300);
-    });
-    
-    searchInput.addEventListener('focus', () => {
-      if (searchInput.value.trim()) {
-        searchResults.classList.add('active');
-      }
-    });
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.search-container')) {
-        searchResults.classList.remove('active');
-      }
-    });
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchInput.focus();
-      }
-      if (e.key === 'Escape') {
-        closeMemoryModal();
-        searchResults.classList.remove('active');
-      }
-    });
-    
-    document.getElementById('timelineViewBtn').addEventListener('click', loadTimeline);
-    
-    // Initialize
-    loadProjects().then(() => {
-      loadTimeline();
-    });
-  </script>
+  <div class="modal-overlay confirm-modal" id="confirmModal">
+    <div class="modal">
+      <div class="modal-header"><h3>Confirm</h3><button class="modal-close" id="closeConfirm">×</button></div>
+      <div class="modal-body"><p class="confirm-message" id="confirmMessage">Delete this memory?</p><p class="confirm-submessage" id="confirmSubmessage">This action cannot be undone.</p></div>
+      <div class="modal-footer center"><button class="btn" id="cancelConfirm">Cancel</button><button class="btn btn-danger" id="confirmAction">Delete</button></div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+<script>
+let currentProject='general',projects=[],searchTimeout=null,allMemories=[],selectedMemories=new Set(),filterType='all',filterImportance='all',sortOrder='newest',confirmCallback=null;
+const projectList=document.getElementById('projectList'),content=document.getElementById('content'),searchInput=document.getElementById('searchInput'),searchResults=document.getElementById('searchResults'),memoryModal=document.getElementById('memoryModal'),importanceSlider=document.getElementById('memoryImportance'),importanceValue=document.getElementById('importanceValue'),memoryProjectSelect=document.getElementById('memoryProject'),confirmModal=document.getElementById('confirmModal'),toastContainer=document.getElementById('toastContainer');
+
+function showToast(message,type='success'){const toast=document.createElement('div');toast.className='toast '+type;toast.innerHTML='<span>'+(type==='success'?'✓':type==='error'?'✗':'ℹ')+'</span><span>'+message+'</span>';toastContainer.appendChild(toast);setTimeout(()=>{toast.style.opacity='0';toast.style.transform='translateY(20px)';setTimeout(()=>toast.remove(),300)},2500)}
+
+async function api(endpoint,options={}){const res=await fetch('/api'+endpoint,{headers:{'Content-Type':'application/json'},...options});const json=await res.json();if(!json.success)throw new Error(json.error);return json.data}
+
+function getImportanceClass(importance){if(importance>=8)return'importance-high';if(importance>=5)return'importance-medium';return'importance-low'}
+
+function formatDate(dateStr){const date=new Date(dateStr),now=new Date(),diff=now-date;if(diff<86400000)return'Today';if(diff<172800000)return'Yesterday';return date.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
+function formatTime(dateStr){return new Date(dateStr).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
+function escapeHtml(text){const div=document.createElement('div');div.textContent=text;return div.innerHTML}
+
+async function loadProjects(){try{const data=await api('/projects');projects=data.projects||[];if(!projects.includes('general'))projects.unshift('general');renderProjectList();renderProjectSelect()}catch(err){projects=['general'];renderProjectList()}}
+
+function renderProjectList(){projectList.innerHTML=projects.map(p=>'<div class="project-item '+(p===currentProject?'active':'')+'" data-project="'+p+'"><div class="project-icon">📁</div><span class="project-name">'+p+'</span></div>').join('');projectList.querySelectorAll('.project-item').forEach(item=>item.addEventListener('click',()=>{currentProject=item.dataset.project;renderProjectList();loadTimeline()}))}
+function renderProjectSelect(){memoryProjectSelect.innerHTML=projects.map(p=>'<option value="'+p+'" '+(p===currentProject?'selected':'')+'>'+p+'</option>').join('')}
+
+function filterAndSortMemories(memories){let filtered=[...memories];if(filterType!=='all')filtered=filtered.filter(m=>m.content_type===filterType);if(filterImportance==='high')filtered=filtered.filter(m=>m.importance>=8);else if(filterImportance==='medium')filtered=filtered.filter(m=>m.importance>=5&&m.importance<8);else if(filterImportance==='low')filtered=filtered.filter(m=>m.importance<5);if(sortOrder==='newest')filtered.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));else if(sortOrder==='oldest')filtered.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));else if(sortOrder==='importance')filtered.sort((a,b)=>b.importance-a.importance);return filtered}
+
+function renderMemoryCard(memory){const impClass=getImportanceClass(memory.importance),isSelected=selectedMemories.has(memory.id),needsExpand=memory.content.length>200;return'<div class="memory-card'+(isSelected?' selected':'')+'" data-id="'+memory.id+'"><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(''+memory.id+'',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span></div><span class="memory-time">'+formatTime(memory.created_at)+'</span></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(''+memory.id+'')">✏️ Edit</button><button class="action-btn copy" onclick="copyMemory(''+memory.id+'')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(''+memory.id+'')">🗑️ Delete</button></div></div>'}
+
+function toggleExpand(btn){const content=btn.previousElementSibling;content.classList.toggle('expanded');btn.textContent=content.classList.contains('expanded')?'Show less':'Show more'}
+function toggleMemorySelection(id,e){e.stopPropagation();if(selectedMemories.has(id))selectedMemories.delete(id);else selectedMemories.add(id);updateBulkActions();loadTimeline()}
+function updateBulkActions(){const bulkActions=document.getElementById('bulkActions'),bulkCount=document.getElementById('bulkCount'),mergeBtn=document.getElementById('mergeBtn');if(bulkActions){if(selectedMemories.size>0){bulkActions.classList.add('visible');bulkCount.textContent=selectedMemories.size+' selected';mergeBtn.disabled=selectedMemories.size<2}else{bulkActions.classList.remove('visible')}}}
+function clearSelection(){selectedMemories.clear();updateBulkActions();loadTimeline()}
+
+async function deleteSelected(){if(selectedMemories.size===0)return;showConfirmModal('Delete '+selectedMemories.size+' memories?','This action cannot be undone.',async()=>{try{await api('/memory/bulk-delete',{method:'POST',body:JSON.stringify({ids:Array.from(selectedMemories),project:currentProject})});showToast('Deleted '+selectedMemories.size+' memories');selectedMemories.clear();updateBulkActions();loadTimeline();loadProjects()}catch(err){showToast(err.message,'error')}})}
+
+async function mergeSelected(){if(selectedMemories.size<2){showToast('Select at least 2 memories to merge','error');return}showConfirmModal('Merge '+selectedMemories.size+' memories?','Contents will be combined into one memory.',async()=>{try{await api('/memory/merge',{method:'POST',body:JSON.stringify({ids:Array.from(selectedMemories),project:currentProject})});showToast('Merged into new memory');selectedMemories.clear();updateBulkActions();loadTimeline()}catch(err){showToast(err.message,'error')}})}
+
+function showConfirmModal(message,submessage,callback){document.getElementById('confirmMessage').textContent=message;document.getElementById('confirmSubmessage').textContent=submessage;confirmCallback=callback;confirmModal.classList.add('active')}
+function hideConfirmModal(){confirmModal.classList.remove('active');confirmCallback=null}
+
+async function confirmDeleteMemory(id){showConfirmModal('Delete this memory?','This action cannot be undone.',async()=>{try{await api('/memory/'+id+'?project='+currentProject,{method:'DELETE'});showToast('Memory deleted');loadTimeline();loadProjects()}catch(err){showToast(err.message,'error')}})}
+async function copyMemory(id){const memory=allMemories.find(m=>m.id===id);if(memory){await navigator.clipboard.writeText(memory.content);showToast('Copied!')}}
+
+function openMemoryModal(){document.getElementById('memoryModalTitle').textContent='Add New Memory';document.getElementById('editMemoryId').value='';document.getElementById('memoryContent').value='';document.getElementById('memoryType').value='insight';importanceSlider.value=5;importanceValue.textContent='5';renderProjectSelect();memoryModal.classList.add('active');document.getElementById('memoryContent').focus()}
+function openEditModal(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;document.getElementById('memoryModalTitle').textContent='Edit Memory';document.getElementById('editMemoryId').value=id;document.getElementById('memoryContent').value=memory.content;document.getElementById('memoryType').value=memory.content_type;importanceSlider.value=memory.importance;importanceValue.textContent=memory.importance;memoryProjectSelect.value=memory.project||currentProject;memoryModal.classList.add('active')}
+function closeMemoryModal(){memoryModal.classList.remove('active')}
+
+async function saveMemory(){const editId=document.getElementById('editMemoryId').value,memContent=document.getElementById('memoryContent').value.trim();if(!memContent)return;const data={content:memContent,type:document.getElementById('memoryType').value,project:memoryProjectSelect.value,importance:parseInt(importanceSlider.value)};try{if(editId){await api('/memory/'+editId,{method:'PATCH',body:JSON.stringify(data)});showToast('Memory updated')}else{await api('/memory/store',{method:'POST',body:JSON.stringify(data)});showToast('Memory saved')}closeMemoryModal();loadTimeline();loadProjects()}catch(err){showToast(err.message,'error')}}
+
+async function performSearch(query){if(!query.trim()){searchResults.classList.remove('active');return}try{const data=await api('/memory/query?q='+encodeURIComponent(query)+'&project='+encodeURIComponent(currentProject)+'&limit=10'),results=data.results||[];if(results.length===0)searchResults.innerHTML='<div class="search-result-item">No results found</div>';else{searchResults.innerHTML=results.map(r=>'<div class="search-result-item" data-id="'+r.id+'"><div class="search-result-content">'+escapeHtml(r.content.substring(0,150))+'</div><div class="search-result-meta">'+r.content_type+'</div></div>').join('')}searchResults.classList.add('active')}catch(err){console.error('Search failed:',err)}}
+
+function onFilterTypeChange(val){filterType=val;loadTimeline()}
+function onFilterImportanceChange(val){filterImportance=val;loadTimeline()}
+function onSortChange(val){sortOrder=val;loadTimeline()}
+
+async function loadTimeline(){content.innerHTML='<div class="loading"><div class="spinner"></div></div>';try{const data=await api('/memory/timeline?project='+encodeURIComponent(currentProject)+'&days=30'),timeline=data.timeline||{},dates=Object.keys(timeline).sort((a,b)=>new Date(b)-new Date(a));allMemories=[];dates.forEach(date=>{allMemories.push(...timeline[date].map(m=>({...m,date})))});const filtered=filterAndSortMemories(allMemories);if(filtered.length===0){content.innerHTML='<div class="empty-state"><div class="empty-state-icon">🧠</div><h3>'+(filterType!=='all'||filterImportance!=='all'?'No matching memories':'No memories yet')+'</h3><p>'+(filterType!=='all'||filterImportance!=='all'?'Try adjusting your filters.':'Start building your knowledge base.')+'</p></div>';return}let html='<div class="view-header"><h2>Timeline</h2><p>'+filtered.length+' '+(filtered.length===1?'memory':'memories')+'</p></div><div class="stats-bar"><div class="stat"><span class="stat-value">'+filtered.length+'</span><span class="stat-label">Memories</span></div></div>';html+='<div class="filter-bar"><div class="filter-group"><span class="filter-label">Type:</span><select class="filter-select" id="filterType" onchange="onFilterTypeChange(this.value)"><option value="all" '+(filterType==='all'?'selected':'')+'>All</option><option value="insight" '+(filterType==='insight'?'selected':'')+'>Insight</option><option value="preference" '+(filterType==='preference'?'selected':'')+'>Preference</option><option value="error" '+(filterType==='error'?'selected':'')+'>Error</option><option value="goal" '+(filterType==='goal'?'selected':'')+'>Goal</option><option value="milestone" '+(filterType==='milestone'?'selected':'')+'>Milestone</option><option value="security" '+(filterType==='security'?'selected':'')+'>Security</option></select></div><div class="filter-group"><span class="filter-label">Importance:</span><select class="filter-select" id="filterImportance" onchange="onFilterImportanceChange(this.value)"><option value="all" '+(filterImportance==='all'?'selected':'')+'>All</option><option value="high" '+(filterImportance==='high'?'selected':'')+'>High (8-10)</option><option value="medium" '+(filterImportance==='medium'?'selected':'')+'>Medium (5-7)</option><option value="low" '+(filterImportance==='low'?'selected':'')+'>Low (1-4)</option></select></div><div class="filter-group"><span class="filter-label">Sort:</span><select class="filter-select" id="sortOrder" onchange="onSortChange(this.value)"><option value="newest" '+(sortOrder==='newest'?'selected':'')+'>Newest first</option><option value="oldest" '+(sortOrder==='oldest'?'selected':'')+'>Oldest first</option><option value="importance" '+(sortOrder==='importance'?'selected':'')+'>Highest importance</option></select></div></div>';html+='<div class="bulk-actions" id="bulkActions"><span class="bulk-count" id="bulkCount">0 selected</span><button class="btn bulk-merge-btn" id="mergeBtn" onclick="mergeSelected()" disabled>Merge Selected</button><button class="btn btn-danger" onclick="deleteSelected()">Delete Selected</button><button class="btn" onclick="clearSelection()">Clear</button></div><div class="timeline">';const grouped={};filtered.forEach(m=>{const date=m.created_at.split('T')[0];if(!grouped[date])grouped[date]=[];grouped[date].push(m)});Object.keys(grouped).sort((a,b)=>new Date(b)-new Date(a)).forEach(date=>{const memories=grouped[date];html+='<div class="timeline-date"><div class="timeline-date-header"><span class="date">'+formatDate(date)+'</span><span>'+memories.length+' '+(memories.length===1?'memory':'memories')+'</span></div><div class="memory-grid">';memories.forEach(memory=>html+=renderMemoryCard(memory));html+='</div></div>'});html+='</div>';content.innerHTML=html;updateBulkActions()}catch(err){content.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Failed to load</h3><p>'+err.message+'</p></div>'}}
+
+document.getElementById('newMemoryBtn').addEventListener('click',openMemoryModal);
+document.getElementById('closeModal').addEventListener('click',closeMemoryModal);
+document.getElementById('cancelMemory').addEventListener('click',closeMemoryModal);
+document.getElementById('saveMemory').addEventListener('click',saveMemory);
+memoryModal.addEventListener('click',e=>{if(e.target===memoryModal)closeMemoryModal()});
+document.getElementById('closeConfirm').addEventListener('click',hideConfirmModal);
+document.getElementById('cancelConfirm').addEventListener('click',hideConfirmModal);
+document.getElementById('confirmAction').addEventListener('click',()=>{if(confirmCallback)confirmCallback();hideConfirmModal()});
+confirmModal.addEventListener('click',e=>{if(e.target===confirmModal)hideConfirmModal()});
+importanceSlider.addEventListener('input',()=>{importanceValue.textContent=importanceSlider.value});
+searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>performSearch(searchInput.value),300)});
+searchInput.addEventListener('focus',()=>{if(searchInput.value.trim())searchResults.classList.add('active')});
+document.addEventListener('click',e=>{if(!e.target.closest('.search-container'))searchResults.classList.remove('active')});
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();searchInput.focus()}if(e.key==='Escape'){closeMemoryModal();hideConfirmModal();searchResults.classList.remove('active')}});
+document.getElementById('timelineViewBtn').addEventListener('click',loadTimeline);
+loadProjects().then(()=>{loadTimeline()});
+</script>
 </body>
 </html>
