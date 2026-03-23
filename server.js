@@ -284,6 +284,8 @@ function initDatabase(dbPath) {
         metadata TEXT,
         importance INTEGER DEFAULT 5,
         project TEXT DEFAULT 'general',
+        pinned INTEGER DEFAULT 0,
+        tags TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         deleted_at DATETIME
@@ -293,6 +295,7 @@ function initDatabase(dbPath) {
       CREATE INDEX IF NOT EXISTS idx_project ON memories(project);
       CREATE INDEX IF NOT EXISTS idx_created ON memories(created_at);
       CREATE INDEX IF NOT EXISTS idx_content_type ON memories(content_type);
+      CREATE INDEX IF NOT EXISTS idx_pinned ON memories(pinned);
     `, (err) => {
       if (err) {
         db.close();
@@ -335,7 +338,12 @@ function generateId() {
 /**
  * Store a memory
  */
-async function storeMemory({ content, type = 'insight', importance = 5, agentId = 'default', project = 'general', metadata = {} }) {
+async function storeMemory({ content, type = 'insight', importance = 5, agentId = 'default', project = 'general', metadata = {}, pinned = false, tags = [] }) {
+  // Extract tags from content if not provided
+  if (!tags || tags.length === 0) {
+    tags = content.match(/#[\w]+/g) || [];
+  }
+  
   const db = await getDb(project);
   
   return new Promise((resolve, reject) => {
@@ -343,11 +351,11 @@ async function storeMemory({ content, type = 'insight', importance = 5, agentId 
     const now = new Date().toISOString();
     
     const stmt = db.prepare(`
-      INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, pinned, tags, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run([id, agentId, content, type, importance, project, JSON.stringify(metadata), now], function(err) {
+    stmt.run([id, agentId, content, type, importance, project, JSON.stringify(metadata), pinned ? 1 : 0, JSON.stringify(tags), now], function(err) {
       db.close();
       if (err) return reject(err);
       resolve({ 
@@ -426,7 +434,7 @@ async function getTimeline({ project = 'general', agentId, days = 7 }) {
     since.setDate(since.getDate() - days);
     
     let sql = `
-      SELECT id, agent_id, content, content_type, importance, created_at
+      SELECT id, agent_id, content, content_type, importance, pinned, tags, created_at
       FROM memories
       WHERE deleted_at IS NULL
         AND created_at > ?
@@ -704,14 +712,148 @@ app.get('/api/memory/timeline', async (req, res) => {
   }
 });
 
+// Get all memories for current project (for graph view)
+app.get('/api/memory/all', async (req, res) => {
+  try {
+    const { project, days } = req.query;
+    const db = await getDb(project || 'general');
+    
+    const since = new Date();
+    since.setDate(since.getDate() - (parseInt(days) || 30));
+    
+    const memories = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT id, agent_id, content, content_type, importance, pinned, tags, created_at
+        FROM memories
+        WHERE deleted_at IS NULL
+          AND created_at > ?
+        ORDER BY pinned DESC, importance DESC, created_at DESC
+      `;
+      
+      db.all(sql, [since.toISOString()], (err, rows) => {
+        db.close();
+        if (err) reject(err);
+        else {
+          resolve(rows.map(row => ({
+            ...row,
+            pinned: row.pinned === 1,
+            tags: row.tags ? JSON.parse(row.tags) : []
+          })));
+        }
+      });
+    });
+    
+    res.json(successResponse({
+      project: project || 'general',
+      count: memories.length,
+      memories
+    }));
+  } catch (err) {
+    console.error('[All Memories Error]', err);
+    res.status(500).json(errorResponse(err.message, 'ALL_MEMORIES_ERROR'));
+  }
+});
+
+// Get backlinks for a memory
+app.get('/api/memory/:id/backlinks', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    
+    // Get the target memory
+    const targetMemory = await new Promise((resolve, reject) => {
+      db.get('SELECT content FROM memories WHERE id = ? AND deleted_at IS NULL', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!targetMemory) {
+      db.close();
+      return res.status(404).json(errorResponse('Memory not found'));
+    }
+    
+    // Extract words from target memory (exclude common words)
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'when', 'where', 'why', 'how', 'not', 'all', 'any', 'some', 'every', 'each']);
+    const targetWords = new Set(
+      targetMemory.content.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !stopWords.has(w))
+    );
+    
+    // Find memories that share significant words
+    const backlinks = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT id, content, content_type, importance, created_at
+        FROM memories
+        WHERE deleted_at IS NULL
+          AND id != ?
+        ORDER BY created_at DESC
+        LIMIT 50
+      `;
+      
+      db.all(sql, [id], (err, rows) => {
+        db.close();
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+    
+    // Score backlinks by shared keywords
+    const scoredBacklinks = backlinks.map(mem => {
+      const memWords = new Set(
+        mem.content.toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .split(/\s+/)
+          .filter(w => w.length > 3 && !stopWords.has(w))
+      );
+      
+      let sharedCount = 0;
+      targetWords.forEach(w => {
+        if (memWords.has(w)) sharedCount++;
+      });
+      
+      // Also check if any target word appears as a hashtag in source
+      const hasDirectRef = Array.from(targetWords).some(w => 
+        mem.content.toLowerCase().includes('#' + w)
+      );
+      
+      return {
+        ...mem,
+        sharedKeywords: sharedCount,
+        hasDirectReference: hasDirectRef,
+        relevanceScore: sharedCount + (hasDirectRef ? 5 : 0)
+      };
+    }).filter(m => m.relevanceScore > 0)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 10);
+    
+    res.json(successResponse({
+      memoryId: id,
+      backlinks: scoredBacklinks
+    }));
+  } catch (err) {
+    console.error('[Backlinks Error]', err);
+    res.status(500).json(errorResponse(err.message, 'BACKLINKS_ERROR'));
+  }
+});
+
 // Update memory
 app.patch('/api/memory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { content, type, importance, project } = req.body;
+    const { content, type, importance, project, pinned, tags } = req.body;
     
-    if (!content && !type && !importance) {
+    if (!content && !type && importance === undefined && pinned === undefined && tags === undefined) {
       return res.status(400).json(errorResponse('At least one field required to update'));
+    }
+    
+    // Extract tags from content if tags not provided but content changed
+    let finalTags = tags;
+    if (tags === undefined && content) {
+      finalTags = content.match(/#[\w]+/g) || [];
     }
     
     const db = await getDb(project || 'general');
@@ -743,6 +885,14 @@ app.patch('/api/memory/:id', async (req, res) => {
     if (importance !== undefined) {
       updates.push('importance = ?');
       params.push(Math.min(10, Math.max(1, parseInt(importance))));
+    }
+    if (pinned !== undefined) {
+      updates.push('pinned = ?');
+      params.push(pinned ? 1 : 0);
+    }
+    if (finalTags !== undefined) {
+      updates.push('tags = ?');
+      params.push(JSON.stringify(finalTags));
     }
     
     updates.push('updated_at = ?');
