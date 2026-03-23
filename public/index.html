@@ -117,6 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .memory-preview h4{font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px}
 .memory-preview p{font-size:0.85rem;line-height:1.6;color:var(--text-primary);white-space:pre-wrap;word-break:break-word}
 .memory-preview .preview-meta{display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)}
+.memory-card.keyboard-nav{border-color:var(--accent);box-shadow:0 0 0 2px rgba(102,126,234,0.3)}
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
 .empty-state-icon{font-size:48px;margin-bottom:16px;opacity:0.5}
 .empty-state h3{font-size:1.25rem;margin-bottom:8px;color:var(--text-primary)}
@@ -124,7 +125,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .loading{display:flex;align-items:center;justify-content:center;padding:40px}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.autosave-indicator{font-size:0.75rem;color:var(--text-muted)}
+.sync-indicator{font-size:0.75rem;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;transition:all 0.2s}
+.sync-indicator.saving{color:var(--yellow);background:var(--yellow-bg)}
+.sync-indicator.saved{color:var(--green);background:var(--green-bg)}
+.sync-indicator.error{color:var(--red);background:var(--red-bg)}
 .autosave-indicator.saving{color:var(--yellow)}
 .autosave-indicator.saved{color:var(--green)}
 .autosave-indicator.error{color:var(--red)}
@@ -204,7 +208,66 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .storage-item{display:flex;align-items:center;gap:4px}
 ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
 @media(max-width:768px){.form-row{grid-template-columns:1fr}.filter-bar{flex-direction:column}}
-  </style>
+  
+/* Command Palette */
+.command-palette-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;opacity:0;visibility:hidden;transition:opacity 0.15s,visibility 0.15s}
+.command-palette-overlay.active{opacity:1;visibility:visible}
+.command-palette{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;width:90%;max-width:560px;box-shadow:0 16px 48px rgba(0,0,0,0.5);overflow:hidden;transform:scale(0.95);transition:transform 0.15s}
+.command-palette-overlay.active .command-palette{transform:scale(1)}
+.command-palette-input-wrap{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:10px}
+.command-palette-input-wrap .cmd-icon{font-size:16px;opacity:0.6}
+.command-palette-input{background:none;border:none;flex:1;font-size:1rem;color:var(--text-primary);outline:none;font-family:inherit}
+.command-palette-input::placeholder{color:var(--text-muted)}
+.command-palette-results{max-height:360px;overflow-y:auto}
+.command-palette-section{padding:8px 0}
+.command-palette-section-title{padding:6px 16px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)}
+.command-item{padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.1s}
+.command-item:hover,.command-item.selected{background:var(--bg-tertiary)}
+.command-item .cmd-label{flex:1;font-size:0.9rem}
+.command-item .cmd-shortcut{font-size:0.7rem;color:var(--text-muted);padding:2px 6px;background:var(--bg-primary);border-radius:4px;border:1px solid var(--border)}
+.command-item .cmd-icon{font-size:14px;width:24px;text-align:center}
+.command-item .cmd-description{font-size:0.75rem;color:var(--text-muted);margin-left:auto}
+.command-palette-footer{padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:0.7rem;color:var(--text-muted)}
+.command-palette-footer kbd{padding:1px 4px;background:var(--bg-primary);border-radius:3px;border:1px solid var(--border)}
+
+/* Daily Digest */
+.digest-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:24px}
+.digest-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.digest-header h3{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.digest-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px}
+.digest-close:hover{color:var(--text-primary)}
+.digest-project{margin-bottom:16px}
+.digest-project:last-child{margin-bottom:0}
+.digest-project-header{font-size:0.8rem;font-weight:600;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.digest-project-header .count{font-size:0.7rem;background:var(--bg-tertiary);padding:1px 6px;border-radius:8px;color:var(--text-muted)}
+.digest-memories{display:flex;flex-direction:column;gap:8px}
+.digest-memory{padding:10px 12px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:border-color 0.15s;font-size:0.85rem}
+.digest-memory:hover{border-color:var(--border-light)}
+.digest-memory .digest-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--text-muted);margin-bottom:4px}
+.digest-memory .digest-content{color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Templates Modal */
+.template-item{padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;position:relative}
+.template-item:hover{border-color:var(--accent);background:rgba(102,126,234,0.05)}
+.template-item:last-child{margin-bottom:0}
+.template-item .t-name{font-size:0.9rem;font-weight:500;margin-bottom:4px}
+.template-item .t-meta{font-size:0.75rem;color:var(--text-muted)}
+.template-item .t-preview{font-size:0.8rem;color:var(--text-secondary);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.template-item .t-delete{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 6px;opacity:0;transition:opacity 0.15s}
+.template-item:hover .t-delete{opacity:1}
+.template-item .t-delete:hover{color:var(--red)}
+.template-list{max-height:300px;overflow-y:auto}
+.recent-searches{position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:300px;overflow-y:auto;z-index:50;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.recent-searches.active{display:block}
+.recent-search-header{padding:8px 12px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.recent-search-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:0.85rem}
+.recent-search-item:last-child{border-bottom:none}
+.recent-search-item:hover{background:var(--bg-tertiary)}
+.recent-search-item .query{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-search-item .remove-search{opacity:0;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 4px;transition:opacity 0.15s}
+.recent-search-item:hover .remove-search{opacity:1}
+.action-btn.open-tab:hover{border-color:var(--accent);color:var(--accent);background:rgba(102,126,234,0.1)}
+</style>
 </head>
 <body>
   <div class="app">
@@ -221,9 +284,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="searchInput" placeholder="Search memories... (/)">
           <div class="search-results" id="searchResults"></div>
+          <div class="recent-searches" id="recentSearches"></div>
         </div>
         <div class="topbar-actions">
-          <span class="autosave-indicator" id="autosaveIndicator"></span>
+          <span class="sync-indicator" id="syncIndicator"></span>
           <button class="btn btn-sm" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
           <select class="font-select" id="fontSizeSelect" title="Font size">
             <option value="small">A-</option>
@@ -240,7 +304,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
               <div class="export-menu-item" onclick="exportMemories('markdown','all')">📋 Export All (Markdown)</div>
             </div>
           </div>
-          <button class="btn btn-sm" id="settingsBtn" title="Settings">⚙️</button>
+          <button class="btn btn-sm" id="settingsBtn" title="Settings (Cmd+,)">⚙️</button>
           <div class="view-toggle">
             <button class="btn active" id="timelineViewBtn" title="Timeline (T)">📅</button>
             <button class="btn" id="graphViewBtn" title="Graph (G)">🕸️</button>
@@ -303,6 +367,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <div class="settings-row"><span class="settings-label">Total Memories</span><span class="settings-value" id="settingsTotalMemories">-</span></div>
         </div>
         <div class="settings-section">
+          <h4>Storage</h4>
+          <div class="settings-row"><span class="settings-label">Data Lake Path</span><input type="text" id="settingsDataLakePath" value="~/.openclaw/data-lake" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);width:220px" onclick="this.select()" onchange="localStorage.setItem('cognexia_datalake_path',this.value)"></div>
+        </div>
+        <div class="settings-section">
           <h4>Data</h4>
           <div class="settings-row"><span class="settings-label">Clear All Memories</span><button class="btn btn-sm btn-danger" onclick="clearAllData()">Clear All</button></div>
         </div>
@@ -319,7 +387,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 let currentProject='general',projects=[],searchTimeout=null,allMemories=[],selectedMemories=new Set(),filterType='all',filterImportance='all',sortOrder='newest',confirmCallback=null,currentView='timeline',filterTag=null,allTags=[];
-let undoStack=[],autosaveTimer=null,sidebarCollapsed=false;
+let undoStack=[],autosaveTimer=null,sidebarCollapsed=false,selectedTemplate=null,digestDismissed=false,kbNavIndex=-1,kbNavMemories=[]
 const projectList=document.getElementById('projectList'),content=document.getElementById('content'),searchInput=document.getElementById('searchInput'),searchResults=document.getElementById('searchResults'),memoryModal=document.getElementById('memoryModal'),importanceSlider=document.getElementById('memoryImportance'),importanceValue=document.getElementById('importanceValue'),memoryProjectSelect=document.getElementById('memoryProject'),confirmModal=document.getElementById('confirmModal'),toastContainer=document.getElementById('toastContainer'),backlinksPanel=document.getElementById('backlinksPanel'),sidebar=document.getElementById('sidebar');
 
 // Preferences (localStorage)
@@ -336,15 +404,18 @@ function loadPreferences(){
     sidebarCollapsed=true;
     document.getElementById('sidebarToggle').textContent='▶';
   }
+  digestDismissed=localStorage.getItem('cognexia_digest_dismissed')===new Date().toISOString().split('T')[0];
   updateSettingsDisplay();
 }
 function savePreference(key,value){localStorage.setItem('cognexia_'+key,value)}
 function updateSettingsDisplay(){
   const theme=localStorage.getItem('cognexia_theme')||'dark';
   const fontSize=localStorage.getItem('cognexia_fontsize')||'medium';
+  const dataLakePath=localStorage.getItem('cognexia_datalake_path')||'~/.openclaw/data-lake';
   document.getElementById('settingsTheme').textContent=theme.charAt(0).toUpperCase()+theme.slice(1);
   document.getElementById('settingsFontSize').textContent=fontSize.charAt(0).toUpperCase()+fontSize.slice(1);
   document.getElementById('settingsSidebar').textContent=sidebarCollapsed?'Collapsed':'Expanded';
+  if(document.getElementById('settingsDataLakePath'))document.getElementById('settingsDataLakePath').value=dataLakePath;
 }
 function updateStorageDisplay(){
   let total=0;
@@ -358,6 +429,15 @@ function updateStorageDisplay(){
   document.getElementById('memoryCountFooter').textContent=memCount+' memories total';
   document.getElementById('settingsStorageSize').textContent=sizeStr;
   document.getElementById('settingsTotalMemories').textContent=memCount;
+}
+function setSyncStatus(status,message){
+  const el=document.getElementById('syncIndicator');
+  if(!el)return;
+  el.className='sync-indicator '+status;
+  if(status==='saving'){el.textContent='💾 Saving...';el.style.display='flex';}
+  else if(status==='saved'){el.textContent='✓ Saved';setTimeout(()=>{if(el.classList.contains('saved'))el.style.display='none';},2000);}
+  else if(status==='error'){el.textContent='✗ Error';setTimeout(()=>{if(el.classList.contains('error'))el.style.display='none';},3000);}
+  else el.style.display='none';
 }
 
 // Theme toggle
@@ -458,7 +538,7 @@ function updateAllTags(){const tags=new Set();allMemories.forEach(m=>{if(m.tags)
 function renderMemoryCard(memory){
   const impClass=getImportanceClass(memory.importance),isSelected=selectedMemories.has(memory.id),needsExpand=memory.content.length>200,tags=memory.tags||extractTags(memory.content);
   const previewContent=escapeHtml(memory.content)+(tags.length?'\n\nTags: '+tags.map(t=>escapeHtml(t)).join(', '):'')+'\n\nType: '+memory.content_type+' | Importance: '+memory.importance+'/10';
-  return'<div class="memory-card'+(isSelected?' selected':'')+(memory.pinned?' pinned':'')+'" data-id="'+memory.id+'"><div class="memory-preview"><h4>Full Preview</h4><p>'+previewContent.replace(/\n/g,'<br>')+'</p><div class="preview-meta"><span>'+memory.content_type+'</span><span>Importance: '+memory.importance+'/10</span><span>'+formatDate(memory.created_at)+'</span></div></div><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(\''+memory.id+'\',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span></div><div style="display:flex;align-items:center;gap:8px"><button class="pin-btn'+(memory.pinned?' pinned':'')+'" onclick="togglePin(\''+memory.id+'\')" title="'+(memory.pinned?'Unpin':'Pin')+'">★</button><span class="memory-time">'+formatTime(memory.created_at)+'</span></div></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(tags.length?'<div class="memory-tags">'+tags.map(t=>'<span class="memory-tag" onclick="filterByTag(\''+t.slice(1)+'\')">'+escapeHtml(t)+'</span>').join('')+'</div>':'')+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(\''+memory.id+'\')">✏️ Edit</button><button class="action-btn" onclick="showBacklinks(\''+memory.id+'\')">📎 Backlinks</button><button class="action-btn copy" onclick="copyMemory(\''+memory.id+'\')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(\''+memory.id+'\')">🗑️ Delete</button></div></div>';
+  return'<div class="memory-card'+(isSelected?' selected':'')+(memory.pinned?' pinned':'')+'" data-id="'+memory.id+'" data-kb-nav="true"><div class="memory-preview"><h4>Full Preview</h4><p>'+previewContent.replace(/\n/g,'<br>')+'</p><div class="preview-meta"><span>'+memory.content_type+'</span><span>Importance: '+memory.importance+'/10</span><span>'+formatDate(memory.created_at)+'</span></div></div><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(\''+memory.id+'\',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span></div><div style="display:flex;align-items:center;gap:8px"><button class="pin-btn'+(memory.pinned?' pinned':'')+'" onclick="togglePin(\''+memory.id+'\')" title="'+(memory.pinned?'Unpin':'Pin')+'">★</button><span class="memory-time">'+formatTime(memory.created_at)+'</span></div></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(tags.length?'<div class="memory-tags">'+tags.map(t=>'<span class="memory-tag" onclick="filterByTag(\''+t.slice(1)+'\')">'+escapeHtml(t)+'</span>').join('')+'</div>':'')+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(\''+memory.id+'\')">✏️ Edit</button><button class="action-btn" onclick="showBacklinks(\''+memory.id+'\')">📎 Backlinks</button><button class="action-btn copy" onclick="copyMemory(\''+memory.id+'\')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(\''+memory.id+'\')">🗑️ Delete</button></div></div>';
 }
 
 // Memory interactions
@@ -486,7 +566,12 @@ document.getElementById('memoryContent').addEventListener('input',()=>{const edi
 
 async function saveMemory(){const editId=document.getElementById('editMemoryId').value,memContent=document.getElementById('memoryContent').value.trim();if(!memContent)return;clearAutosave();const data={content:memContent,type:document.getElementById('memoryType').value,project:memoryProjectSelect.value,importance:parseInt(importanceSlider.value)};try{if(editId){pushUndo({type:'edit',id:editId,oldContent:allMemories.find(m=>m.id===editId)?.content});await api('/memory/'+editId,{method:'PATCH',body:JSON.stringify(data)});showToast('Memory updated');}else{await api('/memory/store',{method:'POST',body:JSON.stringify(data)});showToast('Memory saved');}closeMemoryModal();loadView();loadProjects();}catch(err){showToast(err.message,'error')}}
 
-async function performSearch(query){if(!query.trim()){searchResults.classList.remove('active');return}try{const data=await api('/memory/query?q='+encodeURIComponent(query)+'&project='+encodeURIComponent(currentProject)+'&limit=10'),results=data.results||[];if(results.length===0)searchResults.innerHTML='<div class="search-result-item">No results found</div>';else{searchResults.innerHTML=results.map(r=>'<div class="search-result-item" data-id="'+r.id+'"><div class="search-result-content">'+escapeHtml(r.content.substring(0,150))+'</div><div class="search-result-meta">'+r.content_type+'</div></div>').join('')}searchResults.classList.add('active');}catch(err){console.error('Search failed:',err)}}
+async function performSearch(query){if(!query.trim()){searchResults.classList.remove('active');return}saveRecentSearch(query);try{const data=await api('/memory/query?q='+encodeURIComponent(query)+'&project='+encodeURIComponent(currentProject)+'&limit=10'),results=data.results||[];if(results.length===0)searchResults.innerHTML='<div class="search-result-item">No results found</div>';else{searchResults.innerHTML=results.map(r=>'<div class="search-result-item" data-id="'+r.id+'"><div class="search-result-content">'+escapeHtml(r.content.substring(0,150))+'</div><div class="search-result-meta">'+r.content_type+'</div></div>').join('')}searchResults.classList.add('active');}catch(err){console.error('Search failed:',err)}}
+function getRecentSearches(){try{return JSON.parse(localStorage.getItem('cognexia_recent_searches')||'[]');}catch(e){return [];}}
+function saveRecentSearch(query){if(!query.trim())return;let searches=getRecentSearches();searches=searches.filter(s=>s!==query);searches.unshift(query);searches=searches.slice(0,10);localStorage.setItem('cognexia_recent_searches',JSON.stringify(searches));}
+function renderRecentSearches(){const searches=getRecentSearches();const el=document.getElementById('recentSearches');if(searches.length===0){el.classList.remove('active');return;}el.innerHTML='<div class="recent-search-header">Recent Searches</div>'+searches.map(s=>'<div class="recent-search-item" data-query="'+escapeHtml(s)+'"><span class="query">'+escapeHtml(s)+'</span><button class="remove-search" onclick="event.stopPropagation();removeRecentSearch(\'\''+escapeHtml(s).replace(/'/g,"\\'")+'\'\')">×</button></div>').join('')+'<div class="recent-search-item" onclick="clearAllRecentSearches()" style="color:var(--text-muted);font-size:0.8rem;text-align:center;border-bottom:none">Clear all</div>';el.classList.add('active');}
+function removeRecentSearch(query){let searches=getRecentSearches();searches=searches.filter(s=>s!==query);localStorage.setItem('cognexia_recent_searches',JSON.stringify(searches));renderRecentSearches();}
+function clearAllRecentSearches(){localStorage.setItem('cognexia_recent_searches','[]');document.getElementById('recentSearches').classList.remove('active');}
 async function showBacklinks(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;try{const data=await api('/memory/'+id+'/backlinks?project='+currentProject),backlinks=data.backlinks||[];const list=document.getElementById('backlinksList');if(backlinks.length===0){list.innerHTML='<div class="no-backlinks">No backlinks found</div>'}else{list.innerHTML=backlinks.map(b=>'<div class="backlink-item" onclick="openEditModal(\''+b.id+'\')"><div class="backlink-preview">'+escapeHtml(b.content)+'</div><div class="backlink-meta"><span class="backlink-score">'+b.relevanceScore+' shared keywords</span><span>'+b.content_type+'</span></div></div>').join('')}}catch(err){showToast(err.message,'error')}backlinksPanel.classList.add('open');}
 function closeBacklinks(){backlinksPanel.classList.remove('open')}
 function onFilterTypeChange(val){filterType=val;loadView()}
@@ -510,8 +595,81 @@ function filterAndSortMemories(memories){
   return[...pinned,...unpinned];
 }
 
+// Command Palette
+let commandItems=[],selectedCmdIndex=0;
+const COMMANDS=[
+  {label:'New Memory',icon:'➕',action:()=>openMemoryModal(),shortcut:'N'},
+  {label:'Toggle Theme',icon:'🌙',action:()=>document.getElementById('themeToggle').click(),shortcut:'T'},
+  {label:'Switch to Graph View',icon:'🕸️',action:()=>switchView('graph'),shortcut:'G'},
+  {label:'Switch to Timeline',icon:'📅',action:()=>switchView('timeline'),section:'views'},
+  {label:'Export All (JSON)',icon:'📦',action:()=>exportMemories('json','all')},
+  {label:'Export Current (JSON)',icon:'📄',action:()=>exportMemories('json','current')},
+  {label:'Export All (Markdown)',icon:'📋',action:()=>exportMemories('markdown','all')},
+  {label:'Open Settings',icon:'⚙️',action:()=>{document.getElementById('settingsModal').classList.add('active');updateStorageDisplay();},shortcut:'Ctrl+,'},
+  {label:'Clear All Data',icon:'🗑️',action:()=>clearAllData(),section:'danger'},
+  {label:'New Memory from Template',icon:'📋',action:()=>openTemplateModal()},
+];
+function openCommandPalette(){
+  commandItems=COMMANDS.filter(c=>!c.section||c.section!=='danger');
+  selectedCmdIndex=0;
+  document.getElementById('commandInput').value='';
+  renderCommandResults('');
+  document.getElementById('commandPalette').classList.add('active');
+  document.getElementById('commandInput').focus();
+}
+function closeCommandPalette(){
+  document.getElementById('commandPalette').classList.remove('active');
+}
+function renderCommandResults(query){
+  const results=document.getElementById('commandResults');
+  const filtered=commandItems.filter(c=>c.label.toLowerCase().includes(query.toLowerCase()));
+  if(filtered.length===0){results.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted)">No commands found</div>';return;}
+  let html='';
+  const sections={};
+  filtered.forEach((c,i)=>{
+    const section=c.section||'general';
+    if(!sections[section])sections[section]=[];
+    sections[section].push({...c,filteredIndex:i});
+  });
+  Object.keys(sections).forEach(section=>{
+    html+='<div class="command-palette-section"><div class="command-palette-section-title">'+section+'</div>';
+    sections[section].forEach(c=>{
+      const isSelected=c.filteredIndex===selectedCmdIndex;
+      html+='<div class="command-item'+(isSelected?' selected':'')+'" data-index="'+c.filteredIndex+'" onclick="executeCommand('+c.filteredIndex+')">';
+      html+='<span class="cmd-icon">'+c.icon+'</span>';
+      html+='<span class="cmd-label">'+c.label+'</span>';
+      if(c.shortcut)html+='<span class="cmd-shortcut">'+c.shortcut+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  results.innerHTML=html;
+}
+function executeCommand(index){
+  const cmd=commandItems.find((c,i)=>i===index);
+  if(cmd){closeCommandPalette();cmd.action();}
+}
+
+document.getElementById('commandInput').addEventListener('input',(e)=>{selectedCmdIndex=0;renderCommandResults(e.target.value);});
+document.getElementById('commandInput').addEventListener('keydown',(e)=>{
+  if(e.key==='ArrowDown'){e.preventDefault();selectedCmdIndex=Math.min(selectedCmdIndex+1,commandItems.length-1);renderCommandResults(document.getElementById('commandInput').value);}
+  else if(e.key==='ArrowUp'){e.preventDefault();selectedCmdIndex=Math.max(selectedCmdIndex-1,0);renderCommandResults(document.getElementById('commandInput').value);}
+  else if(e.key==='Enter'){e.preventDefault();executeCommand(selectedCmdIndex);}
+  else if(e.key==='Escape'){closeCommandPalette();}
+});
+document.getElementById('commandPalette').addEventListener('click',(e)=>{if(e.target===document.getElementById('commandPalette'))closeCommandPalette();});
+
+// Open in new tab
+function openMemoryInTab(id){
+  const memory=allMemories.find(m=>m.id===id);
+  if(!memory)return;
+  const url='/memory/'+id+'?project='+encodeURIComponent(currentProject);
+  window.open(url,'_blank');
+}
+
 async function loadTimeline(){
   content.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  loadDailyDigest();
   try{
     const data=await api('/memory/all?project='+encodeURIComponent(currentProject)+'&days=30'),memories=data.memories||[];
     allMemories=memories;updateAllTags();updateStorageDisplay();
@@ -561,15 +719,144 @@ confirmModal.addEventListener('click',e=>{if(e.target===confirmModal)hideConfirm
 document.getElementById('closeBacklinks').addEventListener('click',closeBacklinks);
 importanceSlider.addEventListener('input',()=>{importanceValue.textContent=importanceSlider.value});
 searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>performSearch(searchInput.value),300)});
-searchInput.addEventListener('focus',()=>{if(searchInput.value.trim())searchResults.classList.add('active')});
-document.addEventListener('click',e=>{if(!e.target.closest('.search-container'))searchResults.classList.remove('active')});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchInput&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();searchInput.focus()}else if(e.key==='n'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openMemoryModal()}else if(e.key==='g'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('graph')}else if(e.key==='t'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('timeline')}else if(e.key==='Escape'){closeMemoryModal();hideConfirmModal();searchResults.classList.remove('active');closeBacklinks();document.getElementById('settingsModal').classList.remove('active');}});
+searchInput.addEventListener('focus',()=>{renderRecentSearches();if(searchInput.value.trim())searchResults.classList.add('active');});
+document.addEventListener('click',e=>{if(!e.target.closest('.search-container')){searchResults.classList.remove('active');document.getElementById('recentSearches').classList.remove('active');}if(e.target.closest('.recent-search-item')&&!e.target.closest('.remove-search')){const query=e.target.closest('.recent-search-item').dataset.query;if(query){searchInput.value=query;performSearch(query);document.getElementById('recentSearches').classList.remove('active');}}});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchInput&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();searchInput.focus()}else if(e.key==='n'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openMemoryModal()}else if(e.key==='g'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('graph')}else if(e.key==='t'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('timeline')}else if(e.key==='Escape'){closeMemoryModal();hideConfirmModal();searchResults.classList.remove('active');closeBacklinks();document.getElementById('settingsModal').classList.remove('active');closeCommandPalette();}
+  // Keyboard navigation
+  else if(currentView==='timeline'&&e.key==='ArrowDown'&&!isInputFocused()){
+    e.preventDefault();navigateMemories(1);
+  }else if(currentView==='timeline'&&e.key==='ArrowUp'&&!isInputFocused()){
+    e.preventDefault();navigateMemories(-1);
+  }else if(currentView==='timeline'&&e.key==='Enter'&&!isInputFocused()&&kbNavIndex>=0){
+    e.preventDefault();const card=document.querySelector('[data-kb-nav]');if(card){const id=card.dataset.id;if(id)openEditModal(id);}
+  }else if(currentView==='timeline'&&e.key==='e'&&!isInputFocused()&&kbNavIndex>=0){
+    e.preventDefault();const cards=document.querySelectorAll('[data-kb-nav]');if(cards[kbNavIndex]){const id=cards[kbNavIndex].dataset.id;if(id)openEditModal(id);}
+  }
 document.getElementById('timelineViewBtn').addEventListener('click',()=>switchView('timeline'));
 document.getElementById('graphViewBtn').addEventListener('click',()=>switchView('graph'));
 
 // Init
 loadPreferences();
 loadProjects().then(()=>{loadView();});
+
+// Keyboard navigation helpers
+function isInputFocused(){const tag=document.activeElement.tagName;return tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';}
+function navigateMemories(direction){
+  const cards=Array.from(document.querySelectorAll('.memory-card[data-kb-nav]'));
+  if(cards.length===0)return;
+  if(kbNavIndex>=0)cards[kbNavIndex]?.classList.remove('keyboard-nav');
+  kbNavIndex+=direction;
+  if(kbNavIndex<0)kbNavIndex=cards.length-1;
+  if(kbNavIndex>=cards.length)kbNavIndex=0;
+  cards[kbNavIndex]?.classList.add('keyboard-nav');
+  cards[kbNavIndex]?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Templates
+function getTemplates(){try{return JSON.parse(localStorage.getItem('cognexia_templates')||'[]');}catch(e){return [];}}
+function saveTemplates(templates){localStorage.setItem('cognexia_templates',JSON.stringify(templates));}
+function openTemplateModal(prefillContent){
+  const templates=getTemplates();
+  const list=document.getElementById('templateList');
+  if(templates.length===0){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted)">No templates yet. Save a memory as template from the edit modal.</div>';
+  }else{
+    list.innerHTML=templates.map((t,i)=>'<div class="template-item" data-index="'+i+'" onclick="selectTemplate('+i+')"><button class="t-delete" onclick="event.stopPropagation();deleteTemplate('+i+')">×</button><div class="t-name">'+escapeHtml(t.name)+'</div><div class="t-meta">'+t.type+' • '+t.importance+'/10</div><div class="t-preview">'+escapeHtml(t.content)+'</div></div>').join('');
+  }
+  selectedTemplate=null;
+  document.getElementById('useTemplateBtn').disabled=true;
+  document.getElementById('templateModal').classList.add('active');
+}
+function selectTemplate(index){
+  document.querySelectorAll('.template-item').forEach(el=>el.style.borderColor='');
+  const el=document.querySelector('.template-item[data-index="'+index+'"]');
+  if(el)el.style.borderColor='var(--accent)';
+  selectedTemplate=getTemplates()[index];
+  document.getElementById('useTemplateBtn').disabled=false;
+}
+function deleteTemplate(index){
+  if(!confirm('Delete this template?'))return;
+  const templates=getTemplates();
+  templates.splice(index,1);
+  saveTemplates(templates);
+  openTemplateModal();
+}
+function useSelectedTemplate(){
+  if(!selectedTemplate)return;
+  openMemoryModal();
+  document.getElementById('memoryContent').value=selectedTemplate.content;
+  document.getElementById('memoryType').value=selectedTemplate.type||'insight';
+  document.getElementById('memoryImportance').value=selectedTemplate.importance||5;
+  document.getElementById('importanceValue').textContent=selectedTemplate.importance||5;
+  document.getElementById('templateModal').classList.remove('active');
+}
+document.getElementById('useTemplateBtn').addEventListener('click',useSelectedTemplate);
+document.getElementById('cancelTemplateBtn').addEventListener('click',()=>document.getElementById('templateModal').classList.remove('active'));
+document.getElementById('closeTemplateModal').addEventListener('click',()=>document.getElementById('templateModal').classList.remove('active'));
+document.getElementById('templateModal').addEventListener('click',(e)=>{if(e.target===document.getElementById('templateModal'))document.getElementById('templateModal').classList.remove('active');});
+
+// Save as template from memory modal
+function addSaveAsTemplateButton(){
+  const footer=document.querySelector('#memoryModal .modal-footer');
+  if(!footer)return;
+  const btn=document.createElement('button');
+  btn.className='btn btn-sm';
+  btn.id='saveAsTemplateBtn';
+  btn.textContent='📋 Save as Template';
+  btn.style.marginRight='auto';
+  btn.onclick=()=>{
+    const content=document.getElementById('memoryContent').value.trim();
+    if(!content){showToast('Add content first','error');return;}
+    const name=prompt('Template name:');
+    if(!name)return;
+    const templates=getTemplates();
+    templates.push({name,content,type:document.getElementById('memoryType').value,importance:parseInt(document.getElementById('memoryImportance').value)});
+    saveTemplates(templates);
+    showToast('Template saved');
+  };
+  footer.insertBefore(btn,footer.firstChild);
+}
+addSaveAsTemplateButton();
+
+// Cmd+K shortcut
+document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCommandPalette();}if((e.metaKey||e.ctrlKey)&&e.key===','){e.preventDefault();document.getElementById('settingsModal').classList.add('active');updateStorageDisplay();}});
+
+// Update clearAllData
+const oldClearAll=window.clearAllData;
+window.clearAllData=function(){if(confirm('This will delete ALL memories and templates. Are you sure?')){localStorage.removeItem('cognexia_templates');localStorage.removeItem('cognexia_recent_searches');localStorage.removeItem('cognexia_digest_dismissed');showToast('All data cleared');document.getElementById('settingsModal').classList.remove('active');location.reload();}};
+
 </script>
+
+  <!-- Command Palette -->
+  <div class="command-palette-overlay" id="commandPalette">
+    <div class="command-palette">
+      <div class="command-palette-input-wrap">
+        <span class="cmd-icon">⌘</span>
+        <input type="text" class="command-palette-input" id="commandInput" placeholder="Type a command...">
+      </div>
+      <div class="command-palette-results" id="commandResults"></div>
+      <div class="command-palette-footer">
+        <span><kbd>↑↓</kbd> navigate</span>
+        <span><kbd>Enter</kbd> select</span>
+        <span><kbd>Esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates Modal -->
+  <div class="modal-overlay" id="templateModal">
+    <div class="modal">
+      <div class="modal-header"><h3>Templates</h3><button class="modal-close" id="closeTemplateModal">×</button></div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">Save content as a reusable template, or select one to pre-fill a new memory.</p>
+        <div class="template-list" id="templateList"></div>
+      </div>
+      <div class="modal-footer center">
+        <button class="btn btn-primary" id="useTemplateBtn" disabled>Use Template</button>
+        <button class="btn" id="cancelTemplateBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
