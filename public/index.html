@@ -110,6 +110,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .action-btn:hover{border-color:var(--border-light);color:var(--text-primary)}
 .action-btn.delete:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
 .action-btn.copy:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.action-btn.md:hover{border-color:var(--accent);color:var(--accent);background:rgba(102,126,234,0.1)}
 .expand-btn{background:none;border:none;color:var(--accent);font-size:0.8rem;cursor:pointer;padding:4px 0;margin-top:8px}
 .memory-preview{position:absolute;left:0;right:0;top:100%;margin-top:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:16px;z-index:100;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-height:300px;overflow-y:auto}
 .memory-card:hover .memory-preview{display:block;animation:fadeIn 0.15s ease}
@@ -390,6 +391,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="backlinks-list" id="backlinksList"></div>
   </div>
 
+  <div class="modal-overlay" id="markdownModal">
+    <div class="modal" style="max-width:900px;width:95vw">
+      <div class="modal-header"><h3 id="mdModalTitle">📝 Edit as Markdown</h3><button class="modal-close" id="closeMarkdownModal">×</button></div>
+      <div class="modal-body" style="padding:0;max-height:75vh;display:flex;flex-direction:column">
+        <div class="md-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-sm" onclick="mdInsertText('**','**')" title="Bold"><b>B</b></button>
+          <button class="btn btn-sm" onclick="mdInsertText('*','*')" title="Italic"><i>I</i></button>
+          <button class="btn btn-sm" onclick="mdInsertText('# ','')" title="Heading 1">H1</button>
+          <button class="btn btn-sm" onclick="mdInsertText('## ','')" title="Heading 2">H2</button>
+          <button class="btn btn-sm" onclick="mdInsertText('### ','')" title="Heading 3">H3</button>
+          <button class="btn btn-sm" onclick="mdInsertText('- ','')" title="List">•</button>
+          <button class="btn btn-sm" onclick="mdInsertText('1. ','')" title="Numbered List">1.</button>
+          <button class="btn btn-sm" onclick="mdInsertText('`','`')" title="Inline Code">`</button>
+          <button class="btn btn-sm" onclick="mdInsertText('\n```\n','\n```\n')" title="Code Block"><>&lt;</></button>
+          <button class="btn btn-sm" onclick="mdInsertText('[','](url)')" title="Link">[🔗]</button>
+          <button class="btn btn-sm" onclick="mdInsertText('> ','')" title="Quote">"</button>
+          <span style="flex:1"></span>
+          <div class="md-view-toggle" style="display:flex;gap:4px">
+            <button class="btn btn-sm active" id="mdEditBtn" onclick="setMdView('edit')">Edit</button>
+            <button class="btn btn-sm" id="mdPreviewBtn" onclick="setMdView('preview')">Preview</button>
+            <button class="btn btn-sm" id="mdSplitBtn" onclick="setMdView('split')">Split</button>
+          </div>
+        </div>
+        <div class="md-editor-container" style="flex:1;display:flex;min-height:400px">
+          <div class="md-editor-pane" id="mdEditorPane" style="flex:1;display:flex">
+            <textarea id="mdEditorContent" style="flex:1;border:none;background:var(--bg-primary);color:var(--text-primary);padding:16px;font-family:monospace;font-size:14px;line-height:1.6;resize:none;outline:none" placeholder="Write your memory in Markdown..."></textarea>
+          </div>
+          <div class="md-preview-pane" id="mdPreviewPane" style="flex:1;display:none;border-left:1px solid var(--border);padding:16px;overflow-y:auto;background:var(--bg-card)">
+            <div id="mdPreviewContent"></div>
+          </div>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span id="mdStatus" style="font-size:0.75rem;color:var(--text-muted)"></span>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="mdCancelBtn" onclick="closeMarkdownModal()">Cancel</button>
+            <button class="btn btn-primary" id="mdSaveBtn" onclick="saveMarkdownMemory()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -545,7 +588,7 @@ function updateAllTags(){const tags=new Set();allMemories.forEach(m=>{if(m.tags)
 function renderMemoryCard(memory){
   const impClass=getImportanceClass(memory.importance),isSelected=selectedMemories.has(memory.id),needsExpand=memory.content.length>200,tags=memory.tags||extractTags(memory.content),isPublished=memory.published===1||memory.published===true;
   const previewContent=escapeHtml(memory.content)+(tags.length?'\n\nTags: '+tags.map(t=>escapeHtml(t)).join(', '):'')+'\n\nType: '+memory.content_type+' | Importance: '+memory.importance+'/10'+(isPublished?' | Published':'');
-  return'<div class="memory-card'+(isSelected?' selected':'')+(memory.pinned?' pinned':'')+(isPublished?' published':'')+'" data-id="'+memory.id+'" data-kb-nav="true"><div class="memory-preview"><h4>Full Preview</h4><p>'+previewContent.replace(/\n/g,'<br>')+'</p><div class="preview-meta"><span>'+memory.content_type+'</span><span>Importance: '+memory.importance+'/10</span><span>'+formatDate(memory.created_at)+'</span>'+(isPublished?'<span style="color:var(--accent)">🌐 Published</span>':'')+'</div></div><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(\''+memory.id+'\',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span>'+(isPublished?'<span class="published-badge" title="Published at /p/'+memory.id+'" style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(102,126,234,0.15);color:var(--accent)">🌐</span>':'')+'</div><div style="display:flex;align-items:center;gap:8px"><button class="pin-btn'+(memory.pinned?' pinned':'')+'" onclick="togglePin(\''+memory.id+'\')" title="'+(memory.pinned?'Unpin':'Pin')+'">★</button><span class="memory-time">'+formatTime(memory.created_at)+'</span></div></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(tags.length?'<div class="memory-tags">'+tags.map(t=>'<span class="memory-tag" onclick="filterByTag(\''+t.slice(1)+'\')">'+escapeHtml(t)+'</span>').join('')+'</div>':'')+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(\''+memory.id+'\')">✏️ Edit</button><button class="action-btn'+(isPublished?' published-btn':'')+'" onclick="togglePublish(\''+memory.id+'\')">'+(isPublished?'🔒 Unpublish':'🌐 Publish')+'</button><button class="action-btn" onclick="showBacklinks(\''+memory.id+'\')">📎 Backlinks</button><button class="action-btn copy" onclick="copyMemory(\''+memory.id+'\')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(\''+memory.id+'\')">🗑️ Delete</button></div>'+(isPublished?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.75rem"><a href="/p/'+memory.id+'" target="_blank" style="color:var(--accent)">🌐 View published: /p/'+memory.id+'</a></div>':'')+'</div>';
+  return'<div class="memory-card'+(isSelected?' selected':'')+(memory.pinned?' pinned':'')+(isPublished?' published':'')+'" data-id="'+memory.id+'" data-kb-nav="true"><div class="memory-preview"><h4>Full Preview</h4><p>'+previewContent.replace(/\n/g,'<br>')+'</p><div class="preview-meta"><span>'+memory.content_type+'</span><span>Importance: '+memory.importance+'/10</span><span>'+formatDate(memory.created_at)+'</span>'+(isPublished?'<span style="color:var(--accent)">🌐 Published</span>':'')+'</div></div><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(\''+memory.id+'\',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span>'+(isPublished?'<span class="published-badge" title="Published at /p/'+memory.id+'" style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(102,126,234,0.15);color:var(--accent)">🌐</span>':'')+'</div><div style="display:flex;align-items:center;gap:8px"><button class="pin-btn'+(memory.pinned?' pinned':'')+'" onclick="togglePin(\''+memory.id+'\')" title="'+(memory.pinned?'Unpin':'Pin')+'">★</button><span class="memory-time">'+formatTime(memory.created_at)+'</span></div></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(tags.length?'<div class="memory-tags">'+tags.map(t=>'<span class="memory-tag" onclick="filterByTag(\''+t.slice(1)+'\')">'+escapeHtml(t)+'</span>').join('')+'</div>':'')+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(\''+memory.id+'\')">✏️ Edit</button><button class="action-btn md" onclick="openMarkdownEditor(\''+memory.id+'\')">📝 Markdown</button><button class="action-btn'+(isPublished?' published-btn':'')+'" onclick="togglePublish(\''+memory.id+'\')">'+(isPublished?'🔒 Unpublish':'🌐 Publish')+'</button><button class="action-btn" onclick="showBacklinks(\''+memory.id+'\')">📎 Backlinks</button><button class="action-btn copy" onclick="copyMemory(\''+memory.id+'\')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(\''+memory.id+'\')">🗑️ Delete</button></div>'+(isPublished?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.75rem"><a href="/p/'+memory.id+'" target="_blank" style="color:var(--accent)">🌐 View published: /p/'+memory.id+'</a></div>':'')+'</div>';
 }
 
 // Memory interactions
@@ -729,7 +772,7 @@ importanceSlider.addEventListener('input',()=>{importanceValue.textContent=impor
 searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>performSearch(searchInput.value),300)});
 searchInput.addEventListener('focus',()=>{renderRecentSearches();if(searchInput.value.trim())searchResults.classList.add('active');});
 document.addEventListener('click',e=>{if(!e.target.closest('.search-container')){searchResults.classList.remove('active');document.getElementById('recentSearches').classList.remove('active');}if(e.target.closest('.recent-search-item')&&!e.target.closest('.remove-search')){const query=e.target.closest('.recent-search-item').dataset.query;if(query){searchInput.value=query;performSearch(query);document.getElementById('recentSearches').classList.remove('active');}}});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchInput&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();searchInput.focus()}else if(e.key==='n'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openMemoryModal()}else if(e.key==='g'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('graph')}else if(e.key==='t'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('timeline')}else if(e.key==='Escape'){closeMemoryModal();hideConfirmModal();searchResults.classList.remove('active');closeBacklinks();document.getElementById('settingsModal').classList.remove('active');closeCommandPalette();}
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchInput&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();searchInput.focus()}else if(e.key==='n'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openMemoryModal()}else if(e.key==='g'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('graph')}else if(e.key==='t'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('timeline')}else if(e.key==='Escape'){closeMemoryModal();closeMarkdownModal();hideConfirmModal();searchResults.classList.remove('active');closeBacklinks();document.getElementById('settingsModal').classList.remove('active');closeCommandPalette();}
   // Keyboard navigation
   else if(currentView==='timeline'&&e.key==='ArrowDown'&&!isInputFocused()){
     e.preventDefault();navigateMemories(1);
@@ -832,6 +875,212 @@ document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'
 // Update clearAllData
 const oldClearAll=window.clearAllData;
 window.clearAllData=function(){if(confirm('This will delete ALL memories and templates. Are you sure?')){localStorage.removeItem('cognexia_templates');localStorage.removeItem('cognexia_recent_searches');localStorage.removeItem('cognexia_digest_dismissed');showToast('All data cleared');document.getElementById('settingsModal').classList.remove('active');location.reload();}};
+
+// =============================================
+// MARKDOWN EDITOR
+// =============================================
+let currentMarkdownMemoryId=null;
+let mdViewMode='split'; // 'edit', 'preview', 'split'
+
+function openMarkdownEditor(id){
+  currentMarkdownMemoryId=id;
+  const memory=allMemories.find(m=>m.id===id);
+  if(!memory)return;
+  
+  // Load full memory content from API
+  api('/memory/'+id+'?project='+currentProject).then(fullMemory=>{
+    document.getElementById('mdEditorContent').value=fullMemory.content||'';
+    document.getElementById('mdModalTitle').textContent='📝 Edit as Markdown - '+memory.content_type;
+    updateMarkdownPreview();
+    setMdView('split');
+    document.getElementById('markdownModal').classList.add('active');
+    document.getElementById('mdStatus').textContent='Editing memory: '+id.substring(0,8)+'...';
+  }).catch(err=>{
+    // Fallback to memory from list
+    document.getElementById('mdEditorContent').value=memory.content||'';
+    document.getElementById('mdModalTitle').textContent='📝 Edit as Markdown - '+memory.content_type;
+    updateMarkdownPreview();
+    setMdView('split');
+    document.getElementById('markdownModal').classList.add('active');
+    document.getElementById('mdStatus').textContent='Editing memory: '+id.substring(0,8)+'...';
+  });
+}
+
+function closeMarkdownModal(){
+  document.getElementById('markdownModal').classList.remove('active');
+  currentMarkdownMemoryId=null;
+  clearMdAutosave();
+}
+
+document.getElementById('closeMarkdownModal').addEventListener('click',closeMarkdownModal);
+document.getElementById('markdownModal').addEventListener('click',e=>{if(e.target===document.getElementById('markdownModal'))closeMarkdownModal()});
+
+function setMdView(mode){
+  mdViewMode=mode;
+  const editorPane=document.getElementById('mdEditorPane');
+  const previewPane=document.getElementById('mdPreviewPane');
+  const editBtn=document.getElementById('mdEditBtn');
+  const previewBtn=document.getElementById('mdPreviewBtn');
+  const splitBtn=document.getElementById('mdSplitBtn');
+  
+  // Reset active states
+  [editBtn,previewBtn,splitBtn].forEach(b=>b.classList.remove('active'));
+  
+  if(mode==='edit'){
+    editorPane.style.display='flex';
+    previewPane.style.display='none';
+    editBtn.classList.add('active');
+  } else if(mode==='preview'){
+    editorPane.style.display='none';
+    previewPane.style.display='block';
+    previewBtn.classList.add('active');
+    updateMarkdownPreview();
+  } else { // split
+    editorPane.style.display='flex';
+    previewPane.style.display='block';
+    splitBtn.classList.add('active');
+    updateMarkdownPreview();
+  }
+}
+
+function mdInsertText(before,after){
+  const textarea=document.getElementById('mdEditorContent');
+  const start=textarea.selectionStart;
+  const end=textarea.selectionEnd;
+  const text=textarea.value;
+  const selected=text.substring(start,end);
+  textarea.value=text.substring(0,start)+before+selected+after+text.substring(end);
+  textarea.selectionStart=start+before.length;
+  textarea.selectionEnd=start+before.length+selected.length;
+  textarea.focus();
+  triggerMdAutosave();
+}
+
+let mdAutosaveTimer=null;
+function clearMdAutosave(){if(mdAutosaveTimer){clearTimeout(mdAutosaveTimer);mdAutosaveTimer=null;}}
+function triggerMdAutosave(){
+  clearMdAutosave();
+  if(!currentMarkdownMemoryId)return;
+  document.getElementById('mdStatus').textContent='Autosaving...';
+  mdAutosaveTimer=setTimeout(()=>{
+    saveMarkdownMemory(true);
+  },2000);
+}
+
+function updateMarkdownPreview(){
+  const content=document.getElementById('mdEditorContent').value;
+  const preview=document.getElementById('mdPreviewContent');
+  preview.innerHTML=renderMarkdown(content);
+}
+
+document.getElementById('mdEditorContent').addEventListener('input',()=>{
+  triggerMdAutosave();
+  if(mdViewMode==='preview'||mdViewMode==='split'){
+    updateMarkdownPreview();
+  }
+});
+
+async function saveMarkdownMemory(silent=false){
+  if(!currentMarkdownMemoryId)return;
+  clearMdAutosave();
+  const content=document.getElementById('mdEditorContent').value;
+  
+  try{
+    await api('/memory/'+currentMarkdownMemoryId+'?project='+currentProject,{
+      method:'PATCH',
+      body:JSON.stringify({content:content})
+    });
+    
+    // Update local cache
+    const memoryIdx=allMemories.findIndex(m=>m.id===currentMarkdownMemoryId);
+    if(memoryIdx!==-1){
+      allMemories[memoryIdx].content=content;
+    }
+    
+    if(!silent)showToast('Memory saved as Markdown');
+    closeMarkdownModal();
+    loadView();
+  } catch(err){
+    if(!silent)showToast(err.message,'error');
+    else document.getElementById('mdStatus').textContent='Save failed';
+  }
+}
+
+function renderMarkdown(text){
+  if(!text)return'<p style="color:var(--text-muted)">Nothing to preview</p>';
+  
+  // Escape HTML first
+  let html=escapeHtml(text);
+  
+  // Code blocks (must be before inline code)
+  html=html.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre style="background:var(--bg-primary);padding:12px;border-radius:6px;overflow-x:auto"><code>$2</code></pre>');
+  
+  // Inline code
+  html=html.replace(/`([^`]+)`/g,'<code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:0.9em">$1</code>');
+  
+  // Headers
+  html=html.replace(/^### (.+)$/gm,'<h3 style="font-size:1.2rem;font-weight:600;margin:16px 0 8px 0;color:var(--text-primary)">$1</h3>');
+  html=html.replace(/^## (.+)$/gm,'<h2 style="font-size:1.4rem;font-weight:600;margin:20px 0 10px 0;color:var(--text-primary)">$1</h2>');
+  html=html.replace(/^# (.+)$/gm,'<h1 style="font-size:1.6rem;font-weight:700;margin:24px 0 12px 0;color:var(--text-primary)">$1</h1>');
+  
+  // Bold and italic
+  html=html.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  html=html.replace(/___(.+?)___/g,'<strong><em>$1</em></strong>');
+  html=html.replace(/__(.+?)__/g,'<strong>$1</strong>');
+  html=html.replace(/_(.+?)_/g,'<em>$1</em>');
+  
+  // Links
+  html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" style="color:var(--accent);text-decoration:none" target="_blank">$1</a>');
+  
+  // Blockquotes
+  html=html.replace(/^> (.+)$/gm,'<blockquote style="border-left:3px solid var(--accent);padding-left:12px;margin:12px 0;color:var(--text-secondary);font-style:italic">$1</blockquote>');
+  
+  // Horizontal rules
+  html=html.replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">');
+  
+  // Unordered lists
+  html=html.replace(/^[\-\*] (.+)$/gm,'<li style="margin-left:20px">$1</li>');
+  html=html.replace(/(<li[^>]*>[\s\S]*?<\/li>(\n|$))+/g,'<ul style="margin:8px 0">$&</ul>');
+  
+  // Ordered lists
+  html=html.replace(/^\d+\. (.+)$/gm,'<li style="margin-left:20px">$1</li>');
+  
+  // Paragraphs - wrap remaining text blocks
+  const lines=html.split('\n\n');
+  html=lines.map(line=>{
+    line=line.trim();
+    if(!line)return'';
+    if(line.startsWith('<')||line.startsWith('http'))return line;
+    return'<p style="margin:8px 0;line-height:1.6">'+line.replace(/\n/g,'<br>')+'</p>';
+  }).join('\n');
+  
+  // Clean up multiple br's within paragraphs
+  html=html.replace(/<\/p>\n<br>/g,'</p>\n');
+  
+  return html;
+}
+
+// Keyboard shortcuts in markdown modal
+document.getElementById('mdEditorContent').addEventListener('keydown',e=>{
+  if(e.key==='s'&&(e.metaKey||e.ctrlKey)){
+    e.preventDefault();
+    saveMarkdownMemory();
+  }
+  if(e.key==='Escape'){
+    closeMarkdownModal();
+  }
+  // Tab handling
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const textarea=e.target;
+    const start=textarea.selectionStart;
+    const end=textarea.selectionEnd;
+    textarea.value=textarea.value.substring(0,start)+'  '+textarea.value.substring(end);
+    textarea.selectionStart=textarea.selectionEnd=start+2;
+  }
+});
 
 </script>
 

@@ -2,6 +2,7 @@
  * Cognexia API Server - Data Lake Edition
  * Multi-project memory with isolated databases per project
  * Data location: ~/.openclaw/data-lake/memory-<project>/bridge.db
+ * Markdown files: ~/.openclaw/data-lake/memory-<project>/memories/{id}.md
  */
 
 const express = require('express');
@@ -9,6 +10,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 
 // Crypto module for blind indexing (optional encryption)
 const cognexiaCrypto = require('./crypto');
@@ -335,11 +337,249 @@ function generateId() {
 }
 
 // ============================================
+// MARKDOWN FILE STORAGE
+// ============================================
+
+/**
+ * Get the markdown files directory for a project
+ */
+function getMarkdownDir(project = 'general') {
+  const sanitized = project.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return path.join(DATA_LAKE_BASE, `memory-${sanitized}`, 'memories');
+}
+
+/**
+ * Ensure the markdown directory exists for a project
+ */
+function ensureMarkdownDir(project = 'general') {
+  const dir = getMarkdownDir(project);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.chmodSync(dir, 0o700);
+  }
+  return dir;
+}
+
+/**
+ * Save a memory as a Markdown file with YAML frontmatter
+ * @param {Object} memory - Memory object
+ * @returns {Promise<string>} - Path to saved file
+ */
+async function saveMemoryMarkdown(memory) {
+  const dir = ensureMarkdownDir(memory.project || 'general');
+  const filePath = path.join(dir, `${memory.id}.md`);
+  
+  // Build frontmatter
+  const frontmatter = [
+    '---',
+    `id: ${memory.id}`,
+    `type: ${memory.content_type || 'insight'}`,
+    `importance: ${memory.importance || 5}`,
+    `tags: [${(memory.tags || []).join(', ')}]`,
+    `created_at: ${memory.created_at || new Date().toISOString()}`,
+    `published: ${memory.published ? 'true' : 'false'}`,
+    `pinned: ${memory.pinned ? 'true' : 'false'}`,
+    `agent_id: ${memory.agent_id || 'default'}`,
+    `project: ${memory.project || 'general'}`,
+    '---',
+    ''
+  ].join('\n');
+  
+  // Write file with frontmatter + content
+  const content = frontmatter + (memory.content || '');
+  fs.writeFileSync(filePath, content, 'utf8');
+  
+  return filePath;
+}
+
+/**
+ * Parse frontmatter from markdown content
+ * @param {string} markdownContent - Raw markdown content
+ * @returns {Object} - { metadata: {}, content: string }
+ */
+function parseFrontmatter(markdownContent) {
+  const metadata = {};
+  let content = markdownContent;
+  
+  // Check for frontmatter
+  if (markdownContent.trim().startsWith('---')) {
+    const endMatch = markdownContent.indexOf('---', 3);
+    if (endMatch !== -1) {
+      const frontmatterBlock = markdownContent.slice(3, endMatch).trim();
+      content = markdownContent.slice(endMatch + 3).trim();
+      
+      // Parse frontmatter lines
+      const lines = frontmatterBlock.split('\n');
+      for (const line of lines) {
+        const colonIdx = line.indexOf(':');
+        if (colonIdx !== -1) {
+          const key = line.slice(0, colonIdx).trim();
+          let value = line.slice(colonIdx + 1).trim();
+          
+          // Parse arrays (tags)
+          if (value.startsWith('[') && value.endsWith(']')) {
+            value = value.slice(1, -1).split(',').map(v => v.trim()).filter(v => v);
+          }
+          // Parse booleans
+          else if (value === 'true') value = true;
+          else if (value === 'false') value = false;
+          // Parse numbers
+          else if (!isNaN(value) && value !== '') value = Number(value);
+          
+          metadata[key] = value;
+        }
+      }
+    }
+  }
+  
+  return { metadata, content };
+}
+
+/**
+ * Read a memory from its Markdown file
+ * @param {string} memoryId - Memory ID
+ * @param {string} project - Project name
+ * @returns {Object|null} - Memory object or null if not found
+ */
+function getMemoryMarkdown(memoryId, project = 'general') {
+  const filePath = path.join(getMarkdownDir(project), `${memoryId}.md`);
+  
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  
+  const markdownContent = fs.readFileSync(filePath, 'utf8');
+  const { metadata, content } = parseFrontmatter(markdownContent);
+  
+  return {
+    id: metadata.id || memoryId,
+    content_type: metadata.type || 'insight',
+    importance: metadata.importance || 5,
+    tags: metadata.tags || [],
+    created_at: metadata.created_at || null,
+    published: metadata.published || false,
+    pinned: metadata.pinned || false,
+    agent_id: metadata.agent_id || 'default',
+    project: metadata.project || project,
+    content: content
+  };
+}
+
+/**
+ * Delete a memory's Markdown file
+ * @param {string} memoryId - Memory ID
+ * @param {string} project - Project name
+ * @returns {boolean} - True if deleted, false if not found
+ */
+function deleteMemoryMarkdown(memoryId, project = 'general') {
+  const filePath = path.join(getMarkdownDir(project), `${memoryId}.md`);
+  
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if a memory has a Markdown file
+ * @param {string} memoryId - Memory ID
+ * @param {string} project - Project name
+ * @returns {boolean}
+ */
+function hasMemoryMarkdown(memoryId, project = 'general') {
+  const filePath = path.join(getMarkdownDir(project), `${memoryId}.md`);
+  return fs.existsSync(filePath);
+}
+
+/**
+ * Migrate memories from SQLite to Markdown files
+ * @param {string} project - Project name
+ * @returns {Promise<{migrated: number, failed: number}>}
+ */
+async function migrateMemoriesToMarkdown(project = 'general') {
+  const db = await getDb(project);
+  const dir = ensureMarkdownDir(project);
+  
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM memories WHERE deleted_at IS NULL', [], async (err, rows) => {
+      if (err) {
+        db.close();
+        return reject(err);
+      }
+      
+      let migrated = 0;
+      let failed = 0;
+      
+      for (const row of rows) {
+        try {
+          const filePath = path.join(dir, `${row.id}.md`);
+          
+          // Skip if already migrated
+          if (fs.existsSync(filePath)) {
+            migrated++;
+            continue;
+          }
+          
+          // Parse tags from JSON or use empty array
+          let tags = [];
+          try {
+            tags = row.tags ? JSON.parse(row.tags) : [];
+          } catch (e) {}
+          
+          const memory = {
+            id: row.id,
+            content: row.content,
+            content_type: row.content_type,
+            importance: row.importance,
+            tags: tags,
+            created_at: row.created_at,
+            published: row.published === 1,
+            pinned: row.pinned === 1,
+            agent_id: row.agent_id,
+            project: row.project
+          };
+          
+          await saveMemoryMarkdown(memory);
+          migrated++;
+        } catch (e) {
+          console.error(`[Migration] Failed to migrate memory ${row.id}:`, e.message);
+          failed++;
+        }
+      }
+      
+      db.close();
+      console.log(`[Cognexia Migration] Migrated ${migrated} memories to Markdown, ${failed} failed`);
+      resolve({ migrated, failed });
+    });
+  });
+}
+
+/**
+ * Migrate all projects to Markdown storage
+ */
+async function migrateAllProjectsToMarkdown() {
+  const projects = listProjects();
+  const results = {};
+  
+  for (const project of projects) {
+    try {
+      results[project] = await migrateMemoriesToMarkdown(project);
+    } catch (e) {
+      console.error(`[Migration] Failed for project ${project}:`, e.message);
+      results[project] = { migrated: 0, failed: 0, error: e.message };
+    }
+  }
+  
+  return results;
+}
+
+// ============================================
 // MEMORY BRIDGE CORE FUNCTIONS
 // ============================================
 
 /**
- * Store a memory
+ * Store a memory (saves to both SQLite index and Markdown file)
  */
 async function storeMemory({ content, type = 'insight', importance = 5, agentId = 'default', project = 'general', metadata = {}, pinned = false, published = false, tags = [] }) {
   // Extract tags from content if not provided
@@ -348,33 +588,57 @@ async function storeMemory({ content, type = 'insight', importance = 5, agentId 
   }
   
   const db = await getDb(project);
+  const id = generateId();
+  const now = new Date().toISOString();
   
-  return new Promise((resolve, reject) => {
-    const id = generateId();
-    const now = new Date().toISOString();
-    
+  // Save to SQLite index
+  await new Promise((resolve, reject) => {
     const stmt = db.prepare(`
       INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, pinned, published, published_at, tags, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     stmt.run([id, agentId, content, type, importance, project, JSON.stringify(metadata), pinned ? 1 : 0, published ? 1 : 0, published ? now : null, JSON.stringify(tags), now], function(err) {
+      if (err) {
+        stmt.finalize();
+        db.close();
+        return reject(err);
+      }
+      stmt.finalize();
       db.close();
-      if (err) return reject(err);
-      resolve({ 
-        id, 
-        content, 
-        type, 
-        importance, 
-        project,
-        agentId,
-        published,
-        createdAt: now 
-      });
+      resolve();
     });
-    
-    stmt.finalize();
   });
+  
+  // Save as Markdown file with frontmatter
+  try {
+    await saveMemoryMarkdown({
+      id,
+      content,
+      content_type: type,
+      importance,
+      tags,
+      created_at: now,
+      published,
+      pinned,
+      agent_id: agentId,
+      project
+    });
+  } catch (mdErr) {
+    console.error('[StoreMemory] Failed to save markdown:', mdErr.message);
+    // Continue anyway - SQLite is the source of truth for index
+  }
+  
+  return {
+    id,
+    content,
+    type,
+    importance,
+    project,
+    agentId,
+    published,
+    createdAt: now
+  };
 }
 
 /**
@@ -749,14 +1013,74 @@ app.get('/api/memory/all', async (req, res) => {
       });
     });
     
+    // Try to load content from Markdown files when available
+    const projectName = project || 'general';
+    const memoriesWithContent = memories.map(memory => {
+      const mdMemory = getMemoryMarkdown(memory.id, projectName);
+      if (mdMemory) {
+        return {
+          ...memory,
+          content: mdMemory.content,
+          hasMarkdown: true
+        };
+      }
+      return {
+        ...memory,
+        hasMarkdown: false
+      };
+    });
+    
     res.json(successResponse({
-      project: project || 'general',
-      count: memories.length,
-      memories
+      project: projectName,
+      count: memoriesWithContent.length,
+      memories: memoriesWithContent
     }));
   } catch (err) {
     console.error('[All Memories Error]', err);
     res.status(500).json(errorResponse(err.message, 'ALL_MEMORIES_ERROR'));
+  }
+});
+
+// Get single memory by ID (reads from Markdown file if available)
+app.get('/api/memory/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { project } = req.query;
+    const projectName = project || 'general';
+    
+    // Try markdown first
+    const mdMemory = getMemoryMarkdown(id, projectName);
+    if (mdMemory) {
+      return res.json(successResponse({
+        ...mdMemory,
+        hasMarkdown: true
+      }));
+    }
+    
+    // Fall back to SQLite
+    const db = await getDb(projectName);
+    const memory = await new Promise((resolve, reject) => {
+      db.get('SELECT * FROM memories WHERE id = ? AND deleted_at IS NULL', [id], (err, row) => {
+        db.close();
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!memory) {
+      return res.status(404).json(errorResponse('Memory not found'));
+    }
+    
+    res.json(successResponse({
+      ...memory,
+      pinned: memory.pinned === 1,
+      published: memory.published === 1,
+      tags: memory.tags ? JSON.parse(memory.tags) : [],
+      hasMarkdown: false
+    }));
+  } catch (err) {
+    console.error('[Get Memory Error]', err);
+    res.status(500).json(errorResponse(err.message, 'GET_MEMORY_ERROR'));
   }
 });
 
@@ -922,6 +1246,30 @@ app.patch('/api/memory/:id', async (req, res) => {
       });
     });
     
+    // Update Markdown file if content changed
+    if (content !== undefined || tags !== undefined || pinned !== undefined || published !== undefined) {
+      try {
+        const projectName = project || 'general';
+        const mdMemory = getMemoryMarkdown(id, projectName);
+        if (mdMemory) {
+          await saveMemoryMarkdown({
+            id,
+            content: content !== undefined ? content : mdMemory.content,
+            content_type: type !== undefined ? type : mdMemory.content_type,
+            importance: importance !== undefined ? importance : mdMemory.importance,
+            tags: finalTags !== undefined ? finalTags : mdMemory.tags,
+            created_at: mdMemory.created_at,
+            published: published !== undefined ? published : mdMemory.published,
+            pinned: pinned !== undefined ? pinned : mdMemory.pinned,
+            agent_id: mdMemory.agent_id,
+            project: projectName
+          });
+        }
+      } catch (mdErr) {
+        console.error('[UpdateMemory] Failed to update markdown:', mdErr.message);
+      }
+    }
+    
     res.json(successResponse({ id, updated: true }));
   } catch (err) {
     console.error('[Update Error]', err);
@@ -957,6 +1305,13 @@ app.delete('/api/memory/:id', async (req, res) => {
         else resolve();
       });
     });
+    
+    // Delete Markdown file if exists
+    try {
+      deleteMemoryMarkdown(id, project || 'general');
+    } catch (mdErr) {
+      console.error('[DeleteMemory] Failed to delete markdown:', mdErr.message);
+    }
     
     res.json(successResponse({ id, deleted: true }));
   } catch (err) {
@@ -1363,13 +1718,75 @@ app.post('/api/compress', async (req, res) => {
 app.post('/api/maintenance', async (req, res) => {
   try {
     const result = await runMaintenance();
-    res.json(successResponse({ 
+    res.json(successResponse({
       ...result,
       timestamp: new Date().toISOString()
     }));
   } catch (err) {
     console.error('[Maintenance Error]', err);
     res.status(500).json(errorResponse(err.message, 'MAINTENANCE_ERROR'));
+  }
+});
+
+// Migrate memories to Markdown storage
+app.post('/api/migrate/markdown', async (req, res) => {
+  try {
+    const { project } = req.body;
+
+    let result;
+    if (project) {
+      result = await migrateMemoriesToMarkdown(project);
+    } else {
+      result = await migrateAllProjectsToMarkdown();
+    }
+
+    res.json(successResponse({
+      migration: result,
+      message: project
+        ? `Migrated project '${project}' to Markdown storage`
+        : 'Migrated all projects to Markdown storage'
+    }));
+  } catch (err) {
+    console.error('[Migration Error]', err);
+    res.status(500).json(errorResponse(err.message, 'MIGRATION_ERROR'));
+  }
+});
+
+// Get migration status
+app.get('/api/migrate/status', async (req, res) => {
+  try {
+    const { project } = req.query;
+    const projects = project ? [project] : listProjects();
+    const status = {};
+
+    for (const proj of projects) {
+      const db = await getDb(proj);
+      const count = await new Promise((resolve, reject) => {
+        db.get('SELECT COUNT(*) as count FROM memories WHERE deleted_at IS NULL', [], (err, row) => {
+          db.close();
+          if (err) reject(err);
+          else resolve(row.count);
+        });
+      });
+
+      const mdDir = getMarkdownDir(proj);
+      let mdCount = 0;
+      if (fs.existsSync(mdDir)) {
+        mdCount = fs.readdirSync(mdDir).filter(f => f.endsWith('.md')).length;
+      }
+
+      status[proj] = {
+        sqliteCount: count,
+        markdownCount: mdCount,
+        migrated: mdCount > 0 && mdCount >= count * 0.9,
+        progress: count > 0 ? Math.round((mdCount / count) * 100) : 100
+      };
+    }
+
+    res.json(successResponse({ status }));
+  } catch (err) {
+    console.error('[Migration Status Error]', err);
+    res.status(500).json(errorResponse(err.message, 'MIGRATION_STATUS_ERROR'));
   }
 });
 
