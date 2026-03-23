@@ -1,0 +1,27 @@
+# Electron Builder Configuration for Cognexia
+# This file provides platform-specific overrides
+# Main configuration is in package.json
+
+appId: com.cognexia.app
+productName: Cognexia
+copyright: Copyright © 2024 Ares
+
+asar: true
+compression: maximum
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - server.js
+  - electron/**
+  - public/**
+  - node_modules/**
+  - package.json
+
+extraResources:
+  - from: server.js
+    to: server.js
+  - from: public
+    to: public
