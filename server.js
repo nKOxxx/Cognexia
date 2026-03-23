@@ -285,6 +285,8 @@ function initDatabase(dbPath) {
         importance INTEGER DEFAULT 5,
         project TEXT DEFAULT 'general',
         pinned INTEGER DEFAULT 0,
+        published INTEGER DEFAULT 0,
+        published_at DATETIME,
         tags TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -296,6 +298,7 @@ function initDatabase(dbPath) {
       CREATE INDEX IF NOT EXISTS idx_created ON memories(created_at);
       CREATE INDEX IF NOT EXISTS idx_content_type ON memories(content_type);
       CREATE INDEX IF NOT EXISTS idx_pinned ON memories(pinned);
+      CREATE INDEX IF NOT EXISTS idx_published ON memories(published);
     `, (err) => {
       if (err) {
         db.close();
@@ -338,7 +341,7 @@ function generateId() {
 /**
  * Store a memory
  */
-async function storeMemory({ content, type = 'insight', importance = 5, agentId = 'default', project = 'general', metadata = {}, pinned = false, tags = [] }) {
+async function storeMemory({ content, type = 'insight', importance = 5, agentId = 'default', project = 'general', metadata = {}, pinned = false, published = false, tags = [] }) {
   // Extract tags from content if not provided
   if (!tags || tags.length === 0) {
     tags = content.match(/#[\w]+/g) || [];
@@ -351,11 +354,11 @@ async function storeMemory({ content, type = 'insight', importance = 5, agentId 
     const now = new Date().toISOString();
     
     const stmt = db.prepare(`
-      INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, pinned, tags, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO memories (id, agent_id, content, content_type, importance, project, metadata, pinned, published, published_at, tags, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run([id, agentId, content, type, importance, project, JSON.stringify(metadata), pinned ? 1 : 0, JSON.stringify(tags), now], function(err) {
+    stmt.run([id, agentId, content, type, importance, project, JSON.stringify(metadata), pinned ? 1 : 0, published ? 1 : 0, published ? now : null, JSON.stringify(tags), now], function(err) {
       db.close();
       if (err) return reject(err);
       resolve({ 
@@ -365,6 +368,7 @@ async function storeMemory({ content, type = 'insight', importance = 5, agentId 
         importance, 
         project,
         agentId,
+        published,
         createdAt: now 
       });
     });
@@ -434,7 +438,7 @@ async function getTimeline({ project = 'general', agentId, days = 7 }) {
     since.setDate(since.getDate() - days);
     
     let sql = `
-      SELECT id, agent_id, content, content_type, importance, pinned, tags, created_at
+      SELECT id, agent_id, content, content_type, importance, pinned, published, tags, created_at
       FROM memories
       WHERE deleted_at IS NULL
         AND created_at > ?
@@ -457,7 +461,7 @@ async function getTimeline({ project = 'general', agentId, days = 7 }) {
       rows.forEach(row => {
         const date = row.created_at.split('T')[0];
         if (!timeline[date]) timeline[date] = [];
-        timeline[date].push(row);
+        timeline[date].push({...row, pinned: row.pinned === 1, published: row.published === 1});
       });
       
       resolve(timeline);
@@ -507,7 +511,7 @@ app.get('/api/projects', (req, res) => {
 // Store memory
 app.post('/api/memory/store', async (req, res) => {
   try {
-    const { content, type, importance, agentId, project, metadata } = req.body;
+    const { content, type, importance, agentId, project, metadata, published } = req.body;
     
     if (!content || typeof content !== 'string') {
       return res.status(400).json(errorResponse('Content required (string)', 'VALIDATION_ERROR'));
@@ -523,7 +527,8 @@ app.post('/api/memory/store', async (req, res) => {
       importance: Math.min(10, Math.max(1, importance || 5)),
       agentId: agentId || 'default',
       project: project || 'general',
-      metadata: metadata || {}
+      metadata: metadata || {},
+      published: !!published
     });
     
     res.json(successResponse(result));
@@ -723,7 +728,7 @@ app.get('/api/memory/all', async (req, res) => {
     
     const memories = await new Promise((resolve, reject) => {
       const sql = `
-        SELECT id, agent_id, content, content_type, importance, pinned, tags, created_at
+        SELECT id, agent_id, content, content_type, importance, pinned, published, tags, created_at
         FROM memories
         WHERE deleted_at IS NULL
           AND created_at > ?
@@ -737,6 +742,7 @@ app.get('/api/memory/all', async (req, res) => {
           resolve(rows.map(row => ({
             ...row,
             pinned: row.pinned === 1,
+            published: row.published === 1,
             tags: row.tags ? JSON.parse(row.tags) : []
           })));
         }
@@ -844,9 +850,9 @@ app.get('/api/memory/:id/backlinks', async (req, res) => {
 app.patch('/api/memory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { content, type, importance, project, pinned, tags } = req.body;
+    const { content, type, importance, project, pinned, tags, published } = req.body;
     
-    if (!content && !type && importance === undefined && pinned === undefined && tags === undefined) {
+    if (!content && !type && importance === undefined && pinned === undefined && tags === undefined && published === undefined) {
       return res.status(400).json(errorResponse('At least one field required to update'));
     }
     
@@ -893,6 +899,14 @@ app.patch('/api/memory/:id', async (req, res) => {
     if (finalTags !== undefined) {
       updates.push('tags = ?');
       params.push(JSON.stringify(finalTags));
+    }
+    if (published !== undefined) {
+      updates.push('published = ?');
+      params.push(published ? 1 : 0);
+      if (published) {
+        updates.push('published_at = ?');
+        params.push(new Date().toISOString());
+      }
     }
     
     updates.push('updated_at = ?');
@@ -1955,6 +1969,188 @@ app.use((err, req, res, next) => {
 app.use('/api/*', (req, res) => {
   res.status(404).json(errorResponse('Not found', 'NOT_FOUND'));
 });
+
+// ============================================
+// PUBLIC PAGES (No Auth Required)
+// ============================================
+
+// Published memories index
+app.get('/published', async (req, res) => {
+  try {
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    
+    const memories = await new Promise((resolve, reject) => {
+      const sql = `
+        SELECT id, content, content_type, importance, tags, created_at, published_at
+        FROM memories
+        WHERE deleted_at IS NULL AND published = 1
+        ORDER BY published_at DESC
+      `;
+      db.all(sql, [], (err, rows) => {
+        db.close();
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+    
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Published Memories</title>
+  <style>
+    :root{--bg:#0a0a0f;--bg-card:#12121a;--border:#2a2a3e;--text:#e0e0e0;--text-muted:#666;--accent:#667eea}
+    body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;margin:0;padding:40px 20px}
+    .container{max-width:700px;margin:0 auto}
+    h1{font-size:2rem;font-weight:700;margin-bottom:8px;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .subtitle{color:var(--text-muted);margin-bottom:32px}
+    .memory-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;transition:border-color 0.2s}
+    .memory-card:hover{border-color:var(--accent)}
+    .memory-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:8px}
+    .memory-content{font-size:1rem;line-height:1.6;margin-bottom:12px}
+    .memory-meta{font-size:0.8rem;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap}
+    .importance{font-weight:600;padding:2px 8px;border-radius:4px}
+    .imp-high{background:rgba(231,76,60,0.15);color:#e74c3c}
+    .imp-med{background:rgba(243,156,18,0.15);color:#f39c12}
+    .imp-low{background:rgba(39,174,96,0.15);color:#27ae60}
+    .date{margin-top:8px}
+    .tag{color:var(--accent);margin-right:8px}
+    .empty{text-align:center;padding:60px;color:var(--text-muted)}
+    .empty-icon{font-size:48px;margin-bottom:16px}
+    .footer{margin-top:40px;text-align:center;font-size:0.8rem;color:var(--text-muted);padding-top:20px;border-top:1px solid var(--border)}
+    .footer a{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Published Memories</h1>
+    <p class="subtitle">Shared insights from Cognexia</p>
+    ${memories.length === 0 ? '<div class="empty"><div class="empty-icon">📭</div><p>No published memories yet</p></div>' : memories.map(m => {
+      const impClass = m.importance >= 8 ? 'imp-high' : m.importance >= 5 ? 'imp-med' : 'imp-low';
+      const tags = m.tags ? JSON.parse(m.tags) : [];
+      const preview = m.content.length > 200 ? m.content.substring(0, 197) + '...' : m.content;
+      return `<div class="memory-card">
+        <div class="memory-type">${m.content_type}</div>
+        <div class="memory-content">${escapeHtml(preview)}</div>
+        <div class="memory-meta">
+          <span class="importance ${impClass}">${m.importance}/10</span>
+          ${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
+        </div>
+        <div class="memory-meta date">
+          <a href="/p/${m.id}" style="color:var(--accent)">Read more →</a>
+          <span>Published ${formatDate(m.published_at)}</span>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="footer">
+      <a href="/">← Back to Cognexia</a>
+    </div>
+  </div>
+</body>
+</html>`;
+    res.type('html').send(html);
+  } catch (err) {
+    console.error('[Published Index Error]', err);
+    res.status(500).send('<h1>Error</h1><p>Failed to load published memories</p>');
+  }
+});
+
+// Single published memory page
+app.get('/p/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { project } = req.query;
+    const db = await getDb(project || 'general');
+    
+    const memory = await new Promise((resolve, reject) => {
+      db.get('SELECT * FROM memories WHERE id = ? AND deleted_at IS NULL AND published = 1', [id], (err, row) => {
+        db.close();
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    
+    if (!memory) {
+      return res.status(404).send('<!DOCTYPE html><html><body style="font-family:sans-serif;background:#0a0a0f;color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0"><div style="text-align:center"><h1 style="font-size:4rem;margin:0">404</h1><p style="color:#666">Memory not found or not published</p><a href="/published" style="color:#667eea">← Back to Published</a></div></body></html>');
+    }
+    
+    const impClass = memory.importance >= 8 ? 'imp-high' : memory.importance >= 5 ? 'imp-med' : 'imp-low';
+    const tags = memory.tags ? JSON.parse(memory.tags) : [];
+    
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory - Cognexia</title>
+  <style>
+    :root{--bg:#0a0a0f;--bg-card:#12121a;--border:#2a2a3e;--text:#e0e0e0;--text-muted:#666;--accent:#667eea;--red:#e74c3c;--yellow:#f39c12;--green:#27ae60}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:60px 20px}
+    .container{max-width:680px;margin:0 auto}
+    .back{font-size:0.9rem;color:var(--text-muted);margin-bottom:32px}
+    .back a{color:var(--accent);text-decoration:none}
+    .memory-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:40px}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+    .type{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);font-weight:600}
+    .importance{font-size:0.8rem;font-weight:600;padding:4px 12px;border-radius:6px}
+    .imp-high{background:rgba(231,76,60,0.15);color:#e74c3c}
+    .imp-med{background:rgba(243,156,18,0.15);color:#f39c12}
+    .imp-low{background:rgba(39,174,96,0.15);color:#27ae60}
+    .content{font-size:1.125rem;line-height:1.8;white-space:pre-wrap;word-break:break-word}
+    .tags{margin-top:24px;padding-top:24px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px}
+    .tag{font-size:0.85rem;padding:4px 12px;border-radius:20px;background:rgba(102,126,234,0.1);color:var(--accent)}
+    .meta{margin-top:24px;font-size:0.85rem;color:var(--text-muted);display:flex;gap:20px;flex-wrap:wrap}
+    .published{color:var(--accent)}
+    .footer{margin-top:48px;text-align:center}
+    .footer a{color:var(--accent);text-decoration:none;font-size:0.9rem}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="back"><a href="/published">← All Published Memories</a></div>
+    <div class="memory-card">
+      <div class="header">
+        <span class="type">${escapeHtml(memory.content_type)}</span>
+        <span class="importance ${impClass}">${memory.importance}/10</span>
+      </div>
+      <div class="content">${escapeHtml(memory.content)}</div>
+      ${tags.length > 0 ? `<div class="tags">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      <div class="meta">
+        <span>Created: ${formatDate(memory.created_at)}</span>
+        <span class="published">Published: ${formatDate(memory.published_at)}</span>
+      </div>
+    </div>
+    <div class="footer">
+      <a href="/">← Back to Cognexia</a>
+    </div>
+  </div>
+</body>
+</html>`;
+    res.type('html').send(html);
+  } catch (err) {
+    console.error('[Public Memory Error]', err);
+    res.status(500).send('<h1>Error</h1><p>Failed to load memory</p>');
+  }
+});
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 
 // Web UI fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
