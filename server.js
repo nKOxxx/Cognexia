@@ -2376,6 +2376,480 @@ app.post('/api/templates/apply', async (req, res) => {
 // Initialize agent schemas
 initAllAgentSchemas().catch(console.error);
 
+// ============================================
+// LOCAL FOLDER SYNC API
+// ============================================
+
+/**
+ * Get all memories from a project for export
+ */
+async function getAllMemoriesForExport(project = 'general') {
+  const db = await getDb(project);
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT id, agent_id, content, content_type, metadata, importance, 
+             project, pinned, published, published_at, tags, 
+             created_at, updated_at, deleted_at
+      FROM memories
+      ORDER BY created_at DESC
+    `;
+    db.all(sql, [], (err, rows) => {
+      db.close();
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+/**
+ * Sync status endpoint - check if folder exists and get info
+ */
+app.get('/api/sync/status', async (req, res) => {
+  try {
+    const { path: syncPath } = req.query;
+    
+    if (!syncPath) {
+      return res.status(400).json(errorResponse('syncPath query parameter required'));
+    }
+    
+    const resolvedPath = path.resolve(syncPath.replace(/^~/, os.homedir()));
+    const syncFile = path.join(resolvedPath, 'cognexia-sync.json');
+    
+    let status = {
+      path: resolvedPath,
+      exists: fs.existsSync(resolvedPath),
+      syncFileExists: false,
+      lastSync: null,
+      memoriesInFolder: 0,
+      memoriesInDb: 0
+    };
+    
+    if (status.exists) {
+      status.syncFileExists = fs.existsSync(syncFile);
+      
+      if (status.syncFileExists) {
+        try {
+          const syncData = JSON.parse(fs.readFileSync(syncFile, 'utf-8'));
+          status.lastSync = syncData.lastSync;
+          status.memoriesInFolder = syncData.memories ? syncData.memories.length : 0;
+        } catch (e) {
+          status.syncError = 'Failed to parse sync file';
+        }
+      }
+      
+      const memories = await getAllMemoriesForExport();
+      status.memoriesInDb = memories.length;
+    }
+    
+    res.json(successResponse(status));
+  } catch (err) {
+    console.error('[Sync Status Error]', err);
+    res.status(500).json(errorResponse(err.message, 'SYNC_STATUS_ERROR'));
+  }
+});
+
+/**
+ * Export memories to local folder
+ */
+app.post('/api/sync/export', async (req, res) => {
+  try {
+    const { syncPath, project } = req.body;
+    
+    if (!syncPath) {
+      return res.status(400).json(errorResponse('syncPath required'));
+    }
+    
+    const resolvedPath = path.resolve(syncPath.replace(/^~/, os.homedir()));
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(resolvedPath)) {
+      fs.mkdirSync(resolvedPath, { recursive: true });
+    }
+    
+    const memories = await getAllMemoriesForExport(project || 'general');
+    
+    const syncData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      project: project || 'general',
+      memoryCount: memories.length,
+      memories: memories.map(m => ({
+        id: m.id,
+        agentId: m.agent_id,
+        content: m.content,
+        contentType: m.content_type,
+        metadata: m.metadata ? JSON.parse(m.metadata) : {},
+        importance: m.importance,
+        project: m.project,
+        pinned: m.pinned,
+        published: m.published,
+        publishedAt: m.published_at,
+        tags: m.tags ? JSON.parse(m.tags) : [],
+        createdAt: m.created_at,
+        updatedAt: m.updated_at,
+        deletedAt: m.deleted_at
+      }))
+    };
+    
+    const syncFile = path.join(resolvedPath, 'cognexia-sync.json');
+    fs.writeFileSync(syncFile, JSON.stringify(syncData, null, 2), 'utf-8');
+    
+    console.log(`[Cognexia Sync] Exported ${memories.length} memories to ${syncFile}`);
+    
+    res.json(successResponse({
+      exported: memories.length,
+      path: resolvedPath,
+      syncFile: syncFile,
+      exportedAt: syncData.exportedAt
+    }));
+  } catch (err) {
+    console.error('[Sync Export Error]', err);
+    res.status(500).json(errorResponse(err.message, 'SYNC_EXPORT_ERROR'));
+  }
+});
+
+/**
+ * Import memories from local folder
+ */
+app.post('/api/sync/import', async (req, res) => {
+  try {
+    const { syncPath, project, mode = 'merge' } = req.body;
+    
+    if (!syncPath) {
+      return res.status(400).json(errorResponse('syncPath required'));
+    }
+    
+    const resolvedPath = path.resolve(syncPath.replace(/^~/, os.homedir()));
+    const syncFile = path.join(resolvedPath, 'cognexia-sync.json');
+    
+    if (!fs.existsSync(syncFile)) {
+      return res.status(404).json(errorResponse('No cognexia-sync.json found in specified folder'));
+    }
+    
+    const syncData = JSON.parse(fs.readFileSync(syncFile, 'utf-8'));
+    
+    if (!syncData.memories || !Array.isArray(syncData.memories)) {
+      return res.status(400).json(errorResponse('Invalid sync file format'));
+    }
+    
+    const db = await getDb(project || syncData.project || 'general');
+    let imported = 0;
+    let skipped = 0;
+    const results = [];
+    
+    for (const memory of syncData.memories) {
+      // Check if memory already exists
+      const existing = await new Promise((resolve, reject) => {
+        db.get('SELECT id FROM memories WHERE id = ?', [memory.id], (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        });
+      });
+      
+      if (existing) {
+        if (mode === 'replace') {
+          // Delete existing and re-import
+          await new Promise((resolve, reject) => {
+            db.run('DELETE FROM memories WHERE id = ?', [memory.id], (err) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+        } else {
+          skipped++;
+          continue;
+        }
+      }
+      
+      // Insert memory
+      const stmt = db.prepare(`
+        INSERT INTO memories (id, agent_id, content, content_type, metadata, importance, 
+                              project, pinned, published, published_at, tags, created_at, updated_at, deleted_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      await new Promise((resolve, reject) => {
+        stmt.run([
+          memory.id,
+          memory.agentId || 'sync-import',
+          memory.content,
+          memory.contentType || 'insight',
+          JSON.stringify(memory.metadata || {}),
+          memory.importance || 5,
+          memory.project || project || 'general',
+          memory.pinned || 0,
+          memory.published || 0,
+          memory.publishedAt || null,
+          JSON.stringify(memory.tags || []),
+          memory.createdAt || new Date().toISOString(),
+          memory.updatedAt || new Date().toISOString(),
+          memory.deletedAt || null
+        ], (err) => {
+          stmt.finalize();
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      imported++;
+      results.push({ id: memory.id, action: existing ? 'replaced' : 'added' });
+    }
+    
+    db.close();
+    
+    console.log(`[Cognexia Sync] Imported ${imported} memories from ${syncFile}, skipped ${skipped}`);
+    
+    res.json(successResponse({
+      imported,
+      skipped,
+      mode,
+      path: resolvedPath,
+      importedAt: new Date().toISOString()
+    }));
+  } catch (err) {
+    console.error('[Sync Import Error]', err);
+    res.status(500).json(errorResponse(err.message, 'SYNC_IMPORT_ERROR'));
+  }
+});
+
+/**
+ * Bidirectional sync - merge newer versions
+ */
+app.post('/api/sync/sync', async (req, res) => {
+  try {
+    const { syncPath, project } = req.body;
+    
+    if (!syncPath) {
+      return res.status(400).json(errorResponse('syncPath required'));
+    }
+    
+    const resolvedPath = path.resolve(syncPath.replace(/^~/, os.homedir()));
+    const syncFile = path.join(resolvedPath, 'cognexia-sync.json');
+    const targetProject = project || 'general';
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(resolvedPath)) {
+      fs.mkdirSync(resolvedPath, { recursive: true });
+    }
+    
+    // Get current DB memories
+    const dbMemories = await getAllMemoriesForExport(targetProject);
+    const dbMemoryMap = new Map(dbMemories.map(m => [m.id, m]));
+    
+    // Load existing sync file if present
+    let folderMemories = [];
+    let lastSync = null;
+    
+    if (fs.existsSync(syncFile)) {
+      try {
+        const syncData = JSON.parse(fs.readFileSync(syncFile, 'utf-8'));
+        folderMemories = syncData.memories || [];
+        lastSync = syncData.lastSync;
+      } catch (e) {
+        console.error('[Sync] Failed to parse existing sync file:', e.message);
+      }
+    }
+    
+    const folderMemoryMap = new Map(folderMemories.map(m => [m.id, m]));
+    
+    // Track changes
+    const toFolder = []; // Memories to export to folder (newer in DB)
+    const toDb = [];     // Memories to import to DB (newer in folder)
+    const conflicts = []; // Memories with same ID but different content
+    
+    // Find memories to export to folder (DB newer or only in DB)
+    for (const [id, dbMem] of dbMemoryMap) {
+      const folderMem = folderMemoryMap.get(id);
+      
+      if (!folderMem) {
+        // Only in DB - export to folder
+        toFolder.push(dbMem);
+      } else {
+        // In both - compare updated_at
+        const dbTime = new Date(dbMem.updated_at || dbMem.created_at).getTime();
+        const folderTime = new Date(folderMem.updatedAt || folderMem.createdAt).getTime();
+        
+        if (dbTime > folderTime) {
+          toFolder.push(dbMem);
+        }
+      }
+    }
+    
+    // Find memories to import to DB (folder newer or only in folder)
+    for (const [id, folderMem] of folderMemoryMap) {
+      const dbMem = dbMemoryMap.get(id);
+      
+      if (!dbMem) {
+        // Only in folder - import to DB
+        toDb.push(folderMem);
+      } else {
+        // In both - compare updated_at
+        const dbTime = new Date(dbMem.updated_at || dbMem.created_at).getTime();
+        const folderTime = new Date(folderMem.updatedAt || folderMem.createdAt).getTime();
+        
+        if (folderTime > dbTime) {
+          toDb.push(folderMem);
+        } else if (folderTime === dbTime && JSON.stringify(dbMem.content) !== JSON.stringify(folderMem.content)) {
+          // Same timestamp but different content - mark as potential conflict
+          conflicts.push({
+            id,
+            dbContent: dbMem.content.substring(0, 100),
+            folderContent: folderMem.content.substring(0, 100)
+          });
+        }
+      }
+    }
+    
+    // Import to DB
+    const db = await getDb(targetProject);
+    
+    for (const memory of toDb) {
+      const existing = await new Promise((resolve, reject) => {
+        db.get('SELECT id FROM memories WHERE id = ?', [memory.id], (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        });
+      });
+      
+      if (existing) {
+        await new Promise((resolve, reject) => {
+          db.run(`
+            UPDATE memories SET content = ?, content_type = ?, metadata = ?, importance = ?,
+                                pinned = ?, published = ?, published_at = ?, tags = ?,
+                                updated_at = ?, deleted_at = ?
+            WHERE id = ?
+          `, [
+            memory.content,
+            memory.contentType || 'insight',
+            JSON.stringify(memory.metadata || {}),
+            memory.importance || 5,
+            memory.pinned || 0,
+            memory.published || 0,
+            memory.publishedAt || null,
+            JSON.stringify(memory.tags || []),
+            new Date().toISOString(),
+            memory.deletedAt || null,
+            memory.id
+          ], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      } else {
+        const stmt = db.prepare(`
+          INSERT INTO memories (id, agent_id, content, content_type, metadata, importance, 
+                                project, pinned, published, published_at, tags, created_at, updated_at, deleted_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        await new Promise((resolve, reject) => {
+          stmt.run([
+            memory.id,
+            memory.agentId || 'sync',
+            memory.content,
+            memory.contentType || 'insight',
+            JSON.stringify(memory.metadata || {}),
+            memory.importance || 5,
+            targetProject,
+            memory.pinned || 0,
+            memory.published || 0,
+            memory.publishedAt || null,
+            JSON.stringify(memory.tags || []),
+            memory.createdAt || new Date().toISOString(),
+            new Date().toISOString(),
+            memory.deletedAt || null
+          ], (err) => {
+            stmt.finalize();
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      }
+    }
+    
+    db.close();
+    
+    // Merge: toFolder + folderMemories (updating existing ones with DB versions)
+    const mergedMemories = [...folderMemories];
+    
+    for (const mem of toFolder) {
+      const idx = mergedMemories.findIndex(m => m.id === mem.id);
+      if (idx >= 0) {
+        mergedMemories[idx] = {
+          id: mem.id,
+          agentId: mem.agent_id,
+          content: mem.content,
+          contentType: mem.content_type,
+          metadata: mem.metadata ? JSON.parse(mem.metadata) : {},
+          importance: mem.importance,
+          project: mem.project,
+          pinned: mem.pinned,
+          published: mem.published,
+          publishedAt: mem.published_at,
+          tags: mem.tags ? JSON.parse(mem.tags) : [],
+          createdAt: mem.created_at,
+          updatedAt: mem.updated_at,
+          deletedAt: mem.deleted_at
+        };
+      } else {
+        mergedMemories.push({
+          id: mem.id,
+          agentId: mem.agent_id,
+          content: mem.content,
+          contentType: mem.content_type,
+          metadata: mem.metadata ? JSON.parse(mem.metadata) : {},
+          importance: mem.importance,
+          project: mem.project,
+          pinned: mem.pinned,
+          published: mem.published,
+          publishedAt: mem.published_at,
+          tags: mem.tags ? JSON.parse(mem.tags) : [],
+          createdAt: mem.created_at,
+          updatedAt: mem.updated_at,
+          deletedAt: mem.deleted_at
+        });
+      }
+    }
+    
+    // Add any memories that were only in the folder
+    for (const folderMem of folderMemories) {
+      if (!dbMemoryMap.has(folderMem.id)) {
+        const exists = mergedMemories.find(m => m.id === folderMem.id);
+        if (!exists) {
+          mergedMemories.push(folderMem);
+        }
+      }
+    }
+    
+    // Write sync file
+    const syncData = {
+      version: '1.0',
+      lastSync: new Date().toISOString(),
+      project: targetProject,
+      memoryCount: mergedMemories.length,
+      memories: mergedMemories
+    };
+    
+    fs.writeFileSync(syncFile, JSON.stringify(syncData, null, 2), 'utf-8');
+    
+    console.log(`[Cognexia Sync] Synced: ${toDb.length} imported, ${toFolder.length} exported, ${conflicts.length} conflicts`);
+    
+    res.json(successResponse({
+      imported: toDb.length,
+      exported: toFolder.length,
+      conflicts: conflicts.length,
+      conflictDetails: conflicts,
+      totalInDb: dbMemories.length + toDb.length - (conflicts.length > 0 ? conflicts.length : 0),
+      totalInFolder: mergedMemories.length,
+      path: resolvedPath,
+      lastSync: syncData.lastSync
+    }));
+  } catch (err) {
+    console.error('[Sync Error]', err);
+    res.status(500).json(errorResponse(err.message, 'SYNC_ERROR'));
+  }
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('[API Error]', err);
@@ -2575,7 +3049,7 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log('╔════════════════════════════════════════════════════════╗');
   console.log('║     Cognexia 🧠 — Data Lake Edition v2.3.0                ║');
   console.log('╠════════════════════════════════════════════════════════╣');
@@ -2626,6 +3100,13 @@ app.listen(PORT, () => {
   console.log('║    POST /api/cleanup         - Delete old memories     ║');
   console.log('║    POST /api/compress        - Compress old memories   ║');
   console.log('║    POST /api/maintenance     - Run full maintenance    ║');
+  console.log('║                                                         ║');
+  console.log('║  Local Folder Sync:                                   ║');
+  console.log('║    POST /api/sync/export     - Export memories to folder║');
+  console.log('║    POST /api/sync/import     - Import memories from    ║');
+  console.log('║                               folder                   ║');
+  console.log('║    POST /api/sync/sync       - Bidirectional sync      ║');
+  console.log('║    GET  /api/sync/status     - Get sync status         ║');
   console.log('╚════════════════════════════════════════════════════════╝');
   
   // Schedule daily maintenance at 3 AM

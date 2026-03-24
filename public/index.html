@@ -379,6 +379,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
           <div class="settings-row"><span class="settings-label">Data Lake Path</span><input type="text" id="settingsDataLakePath" value="~/.openclaw/data-lake" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);width:220px" onclick="this.select()" onchange="localStorage.setItem('cognexia_datalake_path',this.value)"></div>
         </div>
         <div class="settings-section">
+          <h4>Local Folder Sync</h4>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <span class="settings-label">Sync Folder Path</span>
+            <input type="text" id="settingsSyncPath" value="" placeholder="/Volumes/NAS/Cognexia or /mnt/data/Cognexia" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);width:100%" onclick="this.select()" onchange="localStorage.setItem('cognexia_sync_path',this.value)">
+          </div>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <span class="settings-label">Last Sync</span>
+            <span id="settingsLastSync" style="font-size:0.8rem;color:var(--text-muted)">Never</span>
+          </div>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <span class="settings-label">Sync Status</span>
+            <span id="settingsSyncStatus" style="font-size:0.8rem;color:var(--text-muted)">-</span>
+          </div>
+          <div class="settings-row" style="gap:8px;margin-top:8px">
+            <button class="btn btn-sm" onclick="syncExportMemories()" id="syncExportBtn" style="flex:1">📤 Export</button>
+            <button class="btn btn-sm" onclick="syncImportMemories()" id="syncImportBtn" style="flex:1">📥 Import</button>
+            <button class="btn btn-sm btn-primary" onclick="syncNow()" id="syncNowBtn" style="flex:1">🔄 Sync Now</button>
+          </div>
+        </div>
+        <div class="settings-section">
           <h4>Data</h4>
           <div class="settings-row"><span class="settings-label">Clear All Memories</span><button class="btn btn-sm btn-danger" onclick="clearAllData()">Clear All</button></div>
         </div>
@@ -462,10 +482,14 @@ function updateSettingsDisplay(){
   const theme=localStorage.getItem('cognexia_theme')||'dark';
   const fontSize=localStorage.getItem('cognexia_fontsize')||'medium';
   const dataLakePath=localStorage.getItem('cognexia_datalake_path')||'~/.openclaw/data-lake';
+  const syncPath=localStorage.getItem('cognexia_sync_path')||'';
+  const lastSync=localStorage.getItem('cognexia_last_sync')||'Never';
   document.getElementById('settingsTheme').textContent=theme.charAt(0).toUpperCase()+theme.slice(1);
   document.getElementById('settingsFontSize').textContent=fontSize.charAt(0).toUpperCase()+fontSize.slice(1);
   document.getElementById('settingsSidebar').textContent=sidebarCollapsed?'Collapsed':'Expanded';
   if(document.getElementById('settingsDataLakePath'))document.getElementById('settingsDataLakePath').value=dataLakePath;
+  if(document.getElementById('settingsSyncPath'))document.getElementById('settingsSyncPath').value=syncPath;
+  if(document.getElementById('settingsLastSync'))document.getElementById('settingsLastSync').textContent=lastSync==='Never'?'Never':new Date(lastSync).toLocaleString();
 }
 function updateStorageDisplay(){
   let total=0;
@@ -488,6 +512,124 @@ function setSyncStatus(status,message){
   else if(status==='saved'){el.textContent='✓ Saved';setTimeout(()=>{if(el.classList.contains('saved'))el.style.display='none';},2000);}
   else if(status==='error'){el.textContent='✗ Error';setTimeout(()=>{if(el.classList.contains('error'))el.style.display='none';},3000);}
   else el.style.display='none';
+}
+
+// Sync functions
+async function syncExportMemories(){
+  const syncPath=localStorage.getItem('cognexia_sync_path');
+  if(!syncPath){showToast('Please set a sync folder path first');return;}
+  
+  const btn=document.getElementById('syncExportBtn');
+  btn.disabled=true;
+  btn.textContent='📤 Exporting...';
+  
+  try {
+    const res=await fetch('/api/sync/export',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({syncPath,project:currentProject})
+    });
+    const data=await res.json();
+    if(data.success){
+      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
+      updateSettingsDisplay();
+      showToast(`Exported ${data.data.exported} memories`);
+    } else {
+      showToast('Export failed: '+data.error);
+    }
+  } catch(e){
+    showToast('Export error: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent='📤 Export';
+  }
+}
+
+async function syncImportMemories(){
+  const syncPath=localStorage.getItem('cognexia_sync_path');
+  if(!syncPath){showToast('Please set a sync folder path first');return;}
+  
+  const btn=document.getElementById('syncImportBtn');
+  btn.disabled=true;
+  btn.textContent='📥 Importing...';
+  
+  try {
+    const res=await fetch('/api/sync/import',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({syncPath,project:currentProject,mode:'merge'})
+    });
+    const data=await res.json();
+    if(data.success){
+      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
+      updateSettingsDisplay();
+      showToast(`Imported ${data.data.imported} memories, skipped ${data.data.skipped}`);
+      loadMemories();
+    } else {
+      showToast('Import failed: '+data.error);
+    }
+  } catch(e){
+    showToast('Import error: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent='📥 Import';
+  }
+}
+
+async function syncNow(){
+  const syncPath=localStorage.getItem('cognexia_sync_path');
+  if(!syncPath){showToast('Please set a sync folder path first');return;}
+  
+  const btn=document.getElementById('syncNowBtn');
+  const statusEl=document.getElementById('settingsSyncStatus');
+  btn.disabled=true;
+  btn.textContent='🔄 Syncing...';
+  if(statusEl)statusEl.textContent='Syncing...';
+  
+  try {
+    const res=await fetch('/api/sync/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({syncPath,project:currentProject})
+    });
+    const data=await res.json();
+    if(data.success){
+      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
+      updateSettingsDisplay();
+      let msg=`Synced: ${data.data.imported} imported, ${data.data.exported} exported`;
+      if(data.data.conflicts>0){
+        msg+=`, ${data.data.conflicts} conflicts`;
+      }
+      showToast(msg);
+      loadMemories();
+    } else {
+      showToast('Sync failed: '+data.error);
+    }
+  } catch(e){
+    showToast('Sync error: '+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent='🔄 Sync Now';
+    if(statusEl)statusEl.textContent='Ready';
+  }
+}
+
+async function checkSyncStatus(){
+  const syncPath=localStorage.getItem('cognexia_sync_path');
+  if(!syncPath)return;
+  
+  try {
+    const res=await fetch(`/api/sync/status?path=${encodeURIComponent(syncPath)}`);
+    const data=await res.json();
+    if(data.success){
+      const statusEl=document.getElementById('settingsSyncStatus');
+      if(statusEl){
+        statusEl.textContent=`${data.data.memoriesInDb} in DB, ${data.data.memoriesInFolder} in folder`;
+      }
+    }
+  } catch(e){
+    console.log('Sync status check failed:',e.message);
+  }
 }
 
 // Theme toggle
@@ -517,7 +659,7 @@ document.getElementById('sidebarToggle').addEventListener('click',()=>{
 });
 
 // Settings modal
-document.getElementById('settingsBtn').addEventListener('click',()=>{updateStorageDisplay();document.getElementById('settingsModal').classList.add('active');});
+document.getElementById('settingsBtn').addEventListener('click',()=>{updateStorageDisplay();updateSettingsDisplay();checkSyncStatus();document.getElementById('settingsModal').classList.add('active');});
 document.getElementById('closeSettings').addEventListener('click',()=>document.getElementById('settingsModal').classList.remove('active'));
 document.getElementById('settingsModal').addEventListener('click',(e)=>{if(e.target===document.getElementById('settingsModal'))document.getElementById('settingsModal').classList.remove('active')});
 
