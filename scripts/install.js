@@ -1,45 +1,45 @@
 #!/usr/bin/env node
 
 /**
- * OpenClaw Cognexia Integration
- * Auto-installs and configures Cognexia for OpenClaw
+ * Cognexia Integration Installer
+ * Auto-installs and configures Cognexia for your project
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const OPENCLAW_DIR = process.env.OPENCLAW_WORKSPACE || path.join(require('os').homedir(), '.openclaw/workspace');
-const MEMORY_DIR = path.join(OPENCLAW_DIR, '.cognexia');
+const WORKSPACE_DIR = process.env.COGNEXIA_WORKSPACE || path.join(require('os').homedir(), '.cognexia/workspace');
+const MEMORY_DIR = path.join(WORKSPACE_DIR, '.cognexia');
 
 function main() {
-  console.log('🧠 Cognexia - OpenClaw Integration\n');
-  
+  console.log('🧠 Cognexia Integration Installer\n');
+
   // Check if already installed
   if (fs.existsSync(MEMORY_DIR)) {
     console.log('✅ Cognexia already installed');
     console.log(`   Location: ${MEMORY_DIR}`);
     return;
   }
-  
+
   // Create directory
   fs.mkdirSync(MEMORY_DIR, { recursive: true });
-  
+
   // Create default config
   const config = {
     storage: 'sqlite',
     path: path.join(MEMORY_DIR, 'memory.db'),
-    agentId: 'OpenClaw',
+    agentId: 'my-agent',
     version: '1.0.0'
   };
-  
+
   fs.writeFileSync(
     path.join(MEMORY_DIR, 'config.json'),
     JSON.stringify(config, null, 2)
   );
-  
+
   // Create wrapper module
-  const wrapperCode = `// Cognexia OpenClaw Integration
+  const wrapperCode = `// Cognexia Integration Wrapper
 const Cognexia = require('cognexia');
 const path = require('path');
 
@@ -49,20 +49,20 @@ const config = require(configPath);
 // Initialize memory
 const memory = new Cognexia(config);
 
-// Enhanced store with OpenClaw defaults
+// Enhanced store with defaults
 async function store(content, options = {}) {
   const sanitized = content.slice(0, 5000).trim();
   return memory.store(sanitized, {
-    agentId: 'OpenClaw',
-    source: 'openclaw-chat',
+    agentId: config.agentId,
+    source: 'cognexia-chat',
     ...options
   });
 }
 
-// Enhanced query with OpenClaw defaults
+// Enhanced query with defaults
 async function query(queryString, options = {}) {
   return memory.query(queryString, {
-    agentId: 'OpenClaw',
+    agentId: config.agentId,
     limit: 5,
     days: 30,
     ...options
@@ -76,7 +76,7 @@ async function getSessionContext() {
     query('preference', { limit: 5 }),
     query('goal', { minImportance: 8, limit: 3 })
   ]);
-  
+
   return {
     recentMemories: recent,
     preferences: preferences,
@@ -88,13 +88,13 @@ async function getSessionContext() {
 // Auto-store important messages
 async function autoStore(userMessage, agentResponse) {
   const importance = calculateImportance(userMessage, agentResponse);
-  
+
   if (importance >= 6) {
     await store(userMessage, {
       type: importance >= 8 ? 'insight' : 'conversation',
       importance
     });
-    
+
     // Extract and store decisions
     if (userMessage.includes('decide') || userMessage.includes('build') || userMessage.includes('create')) {
       await store(\`Decision: \${userMessage}\`, {
@@ -107,25 +107,25 @@ async function autoStore(userMessage, agentResponse) {
 
 function calculateImportance(userMsg, agentResp) {
   let score = 5;
-  
+
   // Length indicators
   if (userMsg.length > 100) score += 1;
   if (userMsg.length > 300) score += 1;
-  
+
   // Keyword indicators
   const highValueWords = ['decide', 'build', 'create', 'launch', 'important', 'critical', 'goal', 'prefer'];
-  const matches = highValueWords.filter(w => 
+  const matches = highValueWords.filter(w =>
     userMsg.toLowerCase().includes(w)
   ).length;
   score += Math.min(3, matches);
-  
+
   // Security/critical
-  if (userMsg.toLowerCase().includes('security') || 
+  if (userMsg.toLowerCase().includes('security') ||
       userMsg.toLowerCase().includes('password') ||
       userMsg.toLowerCase().includes('api key')) {
     score += 3;
   }
-  
+
   return Math.min(10, score);
 }
 
@@ -137,12 +137,12 @@ module.exports = {
   autoStore
 };
 `;
-  
-  fs.writeFileSync(path.join(MEMORY_DIR, 'openclaw-wrapper.js'), wrapperCode);
-  
+
+  fs.writeFileSync(path.join(MEMORY_DIR, 'wrapper.js'), wrapperCode);
+
   // Create usage example
-  const exampleCode = `// Example: Using Cognexia in OpenClaw
-const { store, query, getSessionContext, autoStore } = require('./.cognexia/openclaw-wrapper');
+  const exampleCode = `// Example: Using Cognexia in your project
+const { store, query, getSessionContext, autoStore } = require('./.cognexia/wrapper');
 
 // Store a memory
 await store('User wants to build 3 products this quarter', {
@@ -165,16 +165,16 @@ if (context.hasContext) {
 // Auto-store from conversation
 await autoStore(userMessage, agentResponse);
 `;
-  
+
   fs.writeFileSync(path.join(MEMORY_DIR, 'example.js'), exampleCode);
-  
-  console.log('✅ Cognexia installed for OpenClaw');
+
+  console.log('✅ Cognexia installed');
   console.log(`   Config: ${MEMORY_DIR}/config.json`);
   console.log(`   Database: ${config.path}`);
-  console.log(`   Wrapper: ${MEMORY_DIR}/openclaw-wrapper.js`);
+  console.log(`   Wrapper: ${MEMORY_DIR}/wrapper.js`);
   console.log('\nNext steps:');
   console.log('  1. Install cognexia: npm install cognexia');
-  console.log('  2. Require in your code: require("./.cognexia/openclaw-wrapper")');
+  console.log('  2. Require in your code: require("./.cognexia/wrapper")');
   console.log('  3. See example: cat .cognexia/example.js');
 }
 

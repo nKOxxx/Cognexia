@@ -37,19 +37,19 @@ npm install
 
 ---
 
-## Thoth Briefing System
+## Briefing System
 
 Cognexia ships with a briefing generator that automatically produces a markdown context file for pasting into new AI sessions. This solves the memory gap between conversations.
 
 ### Setup
 
 ```bash
-# Seed your AI partner's context into Cognexia
-node thoth-briefing.js --seed
+# Seed your AI agent's context into Cognexia
+node briefing.js --seed
 
 # Generate a briefing file
-node thoth-briefing.js
-# → ~/.openclaw/thoth-briefing.md
+node briefing.js
+# → ~/.cognexia/briefing.md
 ```
 
 ### Schedule automatic updates (every 30 min)
@@ -57,14 +57,14 @@ node thoth-briefing.js
 ```bash
 crontab -e
 # Add:
-# */30 * * * * node /path/to/Cognexia/thoth-briefing.js >> ~/.openclaw/thoth.log 2>&1
+# */30 * * * * node /path/to/Cognexia/briefing.js >> ~/.cognexia/briefing.log 2>&1
 ```
 
 ### Quick access shortcut
 
 ```bash
-echo "alias thoth='cat ~/.openclaw/thoth-briefing.md'" >> ~/.zshrc && source ~/.zshrc
-# Now just type: thoth
+echo "alias briefing='cat ~/.cognexia/briefing.md'" >> ~/.zshrc && source ~/.zshrc
+# Now just type: briefing
 ```
 
 At the start of each new session, paste the briefing file contents to instantly restore full context.
@@ -105,7 +105,7 @@ Open `http://localhost:10000` for the memory browser:
   "type": "insight | goal | milestone | preference | error | security",
   "importance": 7,
   "project": "general",
-  "agentId": "thoth"
+  "agentId": "my-agent"
 }
 ```
 
@@ -129,13 +129,14 @@ DATA_LAKE_PATH=/Volumes/External/memory ./start.sh start
 ## Data Structure
 
 ```
-~/.openclaw/
+~/.cognexia/
 ├── data-lake/
 │   ├── memory-general/bridge.db     ← Cross-project knowledge
-│   ├── memory-gulf-watch/bridge.db  ← Project-specific memory
+│   ├── memory-my-project/bridge.db  ← Project-specific memory
 │   └── memory-<any>/bridge.db       ← Auto-created on first use
-├── thoth-briefing.md                ← Auto-generated briefing file
-└── thoth.log                        ← Briefing system log
+├── briefing.md                      ← Auto-generated briefing file
+├── briefing.log                     ← Briefing system log
+└── cognexia.key                     ← Encryption key (if enabled)
 ```
 
 ---
@@ -162,8 +163,8 @@ curl -X POST http://localhost:10000/api/maintenance
 ## Privacy
 
 - **100% local** — no cloud, no network calls, no telemetry
-- Data stored in `~/.openclaw/data-lake/` — back it up yourself
-- Encryption keys stored locally at `~/.openclaw/cognexia.key`
+- Data stored in `~/.cognexia/data-lake/` — back it up yourself
+- Encryption keys stored locally at `~/.cognexia/cognexia.key`
 
 ---
 

@@ -1,8 +1,8 @@
 /**
  * Cognexia API Server - Data Lake Edition
  * Multi-project memory with isolated databases per project
- * Data location: ~/.openclaw/data-lake/memory-<project>/bridge.db
- * Markdown files: ~/.openclaw/data-lake/memory-<project>/memories/{id}.md
+ * Data location: ~/.cognexia/data-lake/memory-<project>/bridge.db
+ * Markdown files: ~/.cognexia/data-lake/memory-<project>/memories/{id}.md
  */
 
 const express = require('express');
@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // Base data lake path
-const DATA_LAKE_BASE = process.env.DATA_LAKE_PATH || path.join(require('os').homedir(), '.openclaw', 'data-lake');
+const DATA_LAKE_BASE = process.env.DATA_LAKE_PATH || path.join(require('os').homedir(), '.cognexia', 'data-lake');
 
 // Middleware
 app.use(express.json({ limit: '1mb' }));
@@ -1655,7 +1655,7 @@ app.get('/api/crypto/status', (req, res) => {
   const enabled = cognexiaCrypto.isEncryptionEnabled();
   res.json(successResponse({
     encryptionEnabled: enabled,
-    keyExists: fs.existsSync(path.join(require('os').homedir(), '.openclaw', 'cognexia.key')),
+    keyExists: fs.existsSync(path.join(require('os').homedir(), '.cognexia', 'cognexia.key')),
     algorithm: 'AES-256-GCM',
     indexing: 'HMAC-SHA256 (blind indexes)',
     note: 'Server can search but cannot read content without client key'

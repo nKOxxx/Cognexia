@@ -1,7 +1,7 @@
 #!/bin/bash
 # cognexia Launcher - Data Lake Edition
 
-DATA_LAKE="$HOME/.openclaw/data-lake"
+DATA_LAKE="$HOME/.cognexia/data-lake"
 PID_FILE="/tmp/cognexia.pid"
 
 case "$1" in

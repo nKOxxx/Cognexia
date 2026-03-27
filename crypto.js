@@ -15,7 +15,7 @@ const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
 // Key storage path
-const KEY_PATH = path.join(require('os').homedir(), '.openclaw', 'cognexia.key');
+const KEY_PATH = path.join(require('os').homedir(), '.cognexia', 'cognexia.key');
 
 /**
  * Generate or load encryption key
