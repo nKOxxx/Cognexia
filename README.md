@@ -1,7 +1,7 @@
 # Cognexia
 
 [![npm version](https://img.shields.io/npm/v/cognexia.svg)](https://www.npmjs.com/package/cognexia)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/nKOxxx/Cognexia/blob/main/LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org)
 
 Long-term memory for AI agents. Persistent, searchable, project-isolated memory that survives across sessions — stored 100% locally.
@@ -12,10 +12,10 @@ Long-term memory for AI agents. Persistent, searchable, project-isolated memory 
 
 Every AI conversation starts from scratch. Context windows fill up. Previous work disappears.
 
-Cognexia gives agents a persistent memory layer backed by SQLite, organized per project, with a REST API and web UI.
+Cognexia gives agents a persistent memory layer backed by SQLite, organized per project, with a REST API, a clean dark UI, and a briefing system that keeps your AI partners fully context-aware across sessions.
 
 | Without Cognexia | With Cognexia |
-|---|---|
+| --- | --- |
 | "What were we building yesterday?" | "Continuing the payment integration..." |
 | Lose context after 20 messages | Search entire project history |
 | Repeat requirements every session | Agent remembers your preferences |
@@ -37,75 +37,75 @@ npm install
 
 ---
 
-## Usage
+## Thoth Briefing System
 
-### Store a memory
+Cognexia ships with a briefing generator that automatically produces a markdown context file for pasting into new AI sessions. This solves the memory gap between conversations.
 
-```bash
-curl -X POST http://localhost:10000/api/memory/store \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "User prefers bullet points over long messages",
-    "type": "preference",
-    "importance": 9,
-    "project": "general"
-  }'
-```
-
-### Query memories
+### Setup
 
 ```bash
-# Single project
-curl "http://localhost:10000/api/memory/query?q=payment&project=project1"
+# Seed your AI partner's context into Cognexia
+node thoth-briefing.js --seed
 
-# All projects
-curl "http://localhost:10000/api/memory/query-all?q=payment"
+# Generate a briefing file
+node thoth-briefing.js
+# → ~/.openclaw/thoth-briefing.md
 ```
 
-### Web UI
+### Schedule automatic updates (every 30 min)
 
-Open `http://localhost:10000` — stats dashboard, search, timeline view, dark theme.
+```bash
+crontab -e
+# Add:
+# */30 * * * * node /path/to/Cognexia/thoth-briefing.js >> ~/.openclaw/thoth.log 2>&1
+```
+
+### Quick access shortcut
+
+```bash
+echo "alias thoth='cat ~/.openclaw/thoth-briefing.md'" >> ~/.zshrc && source ~/.zshrc
+# Now just type: thoth
+```
+
+At the start of each new session, paste the briefing file contents to instantly restore full context.
 
 ---
 
-## Data Lake Structure
+## UI
 
-```
-~/.openclaw/data-lake/
-├── memory-general/bridge.db     ← Cross-project knowledge
-├── memory-myproject/bridge.db   ← Your project memories
-└── memory-<any>/bridge.db       ← Auto-created on first use
-```
+Open `http://localhost:10000` for the memory browser:
 
-Each project gets its own SQLite database. Projects are isolated by default; cross-project search available via `query-all`.
+- **Projects sidebar** — isolated memory spaces per project, with memory counts
+- **Timeline view** — all memories in a card grid, filterable by type and importance
+- **Graph view** — visual map of memories, connected by type, zoomable and pannable
+- **Search** — full-text search across the current project
+- **Add / Edit / Delete** — full memory management with type, importance, and project assignment
 
 ---
 
 ## API Reference
 
-| Endpoint | Description |
-|---|---|
-| `GET /` | Web UI |
-| `GET /api/health` | Status + project list |
-| `GET /api/projects` | All memory projects |
-| `POST /api/memory/store` | Store a memory |
-| `GET /api/memory/query` | Query single project |
-| `GET /api/memory/query-all` | Search all projects |
-| `GET /api/memory/timeline` | Memories grouped by date |
-| `POST /api/cleanup` | Delete old low-importance memories |
-| `POST /api/compress` | Compress old memories |
-| `POST /api/maintenance` | Run full maintenance |
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/health` | GET | Status + project list |
+| `/api/projects` | GET | All memory projects |
+| `/api/memory/store` | POST | Store a memory |
+| `/api/memory/query` | GET | Query single project (`?q=term&project=name`) |
+| `/api/memory/query-all` | GET | Search all projects |
+| `/api/memory/timeline` | GET | Memories grouped by date |
+| `/api/cleanup` | POST | Delete old low-importance memories |
+| `/api/compress` | POST | Compress old memories |
+| `/api/maintenance` | POST | Run full maintenance |
 
-### Memory object fields
+### Memory object
 
 ```json
 {
   "content": "Memory content",
-  "type": "insight | preference | error | goal | milestone | security",
-  "importance": 5,
+  "type": "insight | goal | milestone | preference | error | security",
+  "importance": 7,
   "project": "general",
-  "agentId": "optional-agent-id",
-  "metadata": {}
+  "agentId": "thoth"
 }
 ```
 
@@ -122,6 +122,20 @@ Each project gets its own SQLite database. Projects are isolated by default; cro
 
 # Custom data path
 DATA_LAKE_PATH=/Volumes/External/memory ./start.sh start
+```
+
+---
+
+## Data Structure
+
+```
+~/.openclaw/
+├── data-lake/
+│   ├── memory-general/bridge.db     ← Cross-project knowledge
+│   ├── memory-gulf-watch/bridge.db  ← Project-specific memory
+│   └── memory-<any>/bridge.db       ← Auto-created on first use
+├── thoth-briefing.md                ← Auto-generated briefing file
+└── thoth.log                        ← Briefing system log
 ```
 
 ---
@@ -155,4 +169,4 @@ curl -X POST http://localhost:10000/api/maintenance
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/nKOxxx/Cognexia/blob/main/LICENSE)

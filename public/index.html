@@ -1,1261 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cognexia — Memory Browser</title>
-  <style>
-:root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--bg-tertiary:#1a1a24;--bg-card:#15151f;--border:#2a2a3e;--border-light:#3a3a4e;--text-primary:#e0e0e0;--text-secondary:#888;--text-muted:#555;--accent:#667eea;--accent-hover:#7b8ff0;--red:#e74c3c;--yellow:#f39c12;--green:#27ae60;--red-bg:rgba(231,76,60,0.15);--yellow-bg:rgba(243,156,18,0.15);--green-bg:rgba(39,174,96,0.15);--sidebar-width:260px;--topbar-height:56px;--font-size-base:14px}
-[data-theme="light"]{--bg-primary:#f5f5f7;--bg-secondary:#ffffff;--bg-tertiary:#eaeaea;--bg-card:#ffffff;--border:#d0d0d5;--border-light:#b0b0b8;--text-primary:#1a1a1f;--text-secondary:#666;--text-muted:#999;--accent:#5a6fd6;--accent-hover:#4a5fc5;--red:#c0392b;--yellow:#d68910;--green:#1e8449;--red-bg:rgba(192,57,43,0.12);--yellow-bg:rgba(214,137,16,0.12);--green-bg:rgba(30,132,73,0.12)}
-[data-font-size="small"]{--font-size-base:12px}
-[data-font-size="medium"]{--font-size-base:14px}
-[data-font-size="large"]{--font-size-base:16px}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;overflow:hidden;font-size:var(--font-size-base)}
-.app{display:flex;height:100vh}
-.sidebar{width:var(--sidebar-width);background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width 0.3s ease;position:relative;z-index:50}
-.sidebar.collapsed{width:56px}
-.sidebar.collapsed .sidebar-header h1,.sidebar.collapsed .sidebar-header p,.sidebar.collapsed .project-name,.sidebar.collapsed .project-count,.sidebar.collapsed .sidebar-section-title,.sidebar.collapsed #newMemoryBtn span,.sidebar.collapsed .sidebar-toggle{display:none}
-.sidebar.collapsed .sidebar-header{justify-content:center;padding:12px}
-.sidebar.collapsed #newMemoryBtn{padding:10px;width:40px;justify-content:center}
-.sidebar.collapsed .project-item{justify-content:center;padding:10px}
-.sidebar.collapsed .project-icon{margin:0}
-.sidebar-header{padding:16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
-.sidebar-header h1{font-size:1.25rem;font-weight:600;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sidebar-header p{font-size:0.75rem;color:var(--text-muted)}
-.sidebar-section{padding:12px}
-.sidebar-section-title{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;padding:0 4px}
-.sidebar-toggle{position:absolute;top:60px;right:-12px;width:24px;height:24px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:all 0.2s;z-index:60}
-.sidebar-toggle:hover{background:var(--bg-tertiary);color:var(--text-primary)}
-.project-list{flex:1;overflow-y:auto;padding:0 8px}
-.project-item{display:flex;align-items:center;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.15s;gap:10px}
-.project-item:hover{background:var(--bg-tertiary)}
-.project-item.active{background:var(--bg-tertiary);border:1px solid var(--border-light)}
-.project-icon{width:20px;height:20px;border-radius:4px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;opacity:0.8;flex-shrink:0}
-.project-name{flex:1;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.project-count{font-size:0.7rem;background:var(--bg-tertiary);padding:2px 6px;border-radius:8px;color:var(--text-muted);flex-shrink:0}
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
-.topbar{height:var(--topbar-height);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px}
-.search-container{flex:1;max-width:500px;position:relative}
-.search-input{width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 36px;font-size:0.875rem;color:var(--text-primary);outline:none;transition:border-color 0.15s}
-.search-input:focus{border-color:var(--accent)}
-.search-input::placeholder{color:var(--text-muted)}
-.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
-.topbar-actions{display:flex;gap:8px;align-items:center}
-.theme-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:14px}
-.theme-btn:hover{background:var(--bg-card);border-color:var(--border-light);color:var(--text-primary)}
-.font-select{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.8rem;color:var(--text-primary);cursor:pointer;outline:none}
-.font-select:focus{border-color:var(--accent)}
-.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:0.875rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:6px}
-.btn:hover{background:var(--bg-card);border-color:var(--border-light)}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:white}
-.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
-.btn-danger{background:var(--red);border-color:var(--red);color:white}
-.btn-danger:hover{background:#c0392b;border-color:#c0392b}
-.btn.active{background:var(--accent);border-color:var(--accent);color:white}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
-.btn-sm{padding:6px 10px;font-size:0.75rem}
-.export-dropdown{position:relative}
-.export-menu{position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:180px;display:none;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-.export-menu.open{display:block}
-.export-menu-item{padding:8px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.8rem;transition:background 0.15s}
-.export-menu-item:hover{background:var(--bg-tertiary)}
-.content{flex:1;overflow-y:auto;padding:24px}
-.view-header{margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
-.view-header h2{font-size:1.5rem;font-weight:600}
-.view-header p{color:var(--text-secondary);margin-top:4px;font-size:0.875rem}
-.filter-bar{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding:16px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border)}
-.filter-group{display:flex;align-items:center;gap:8px}
-.filter-label{font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em}
-.filter-select{background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);cursor:pointer;outline:none}
-.filter-select:focus{border-color:var(--accent)}
-.tag-filter{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.tag-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:12px;background:var(--bg-tertiary);border:1px solid var(--border);font-size:0.75rem;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;gap:4px}
-.tag-badge:hover,.tag-badge.active{background:var(--accent);border-color:var(--accent);color:white}
-.tag-badge .remove{opacity:0.6;font-size:10px}
-.tag-badge:hover .remove{opacity:1}
-.bulk-actions{display:none;align-items:center;gap:12px;padding:12px 16px;margin-bottom:16px;background:rgba(102,126,234,0.1);border-radius:10px;border:1px solid var(--accent)}
-.bulk-actions.visible{display:flex}
-.bulk-count{font-size:0.875rem;color:var(--accent);font-weight:500}
-.timeline{max-width:800px}
-.timeline-date{margin-bottom:24px}
-.timeline-date-header{font-size:0.875rem;font-weight:600;color:var(--text-secondary);padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.timeline-date-header .date{color:var(--text-primary)}
-.memory-grid{display:grid;gap:12px}
-.memory-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.15s,transform 0.15s;position:relative}
-.memory-card:hover{border-color:var(--border-light);transform:translateY(-1px)}
-.memory-card.selected{border-color:var(--accent);background:rgba(102,126,234,0.05)}
-.memory-card.pinned{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow)}
-.memory-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.memory-meta{display:flex;align-items:center;gap:8px}
-.memory-checkbox{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);background:var(--bg-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;margin-right:8px}
-.memory-checkbox:hover{border-color:var(--accent)}
-.memory-checkbox.checked{background:var(--accent);border-color:var(--accent)}
-.memory-checkbox.checked::after{content:'✓';color:white;font-size:12px;font-weight:bold}
-.pin-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;font-size:14px;transition:color 0.15s}
-.pin-btn:hover,.pin-btn.pinned{color:var(--yellow)}
-.memory-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.03em;padding:3px 8px;border-radius:4px;background:var(--bg-tertiary);color:var(--text-secondary)}
-.memory-importance{font-size:0.7rem;font-weight:600;padding:3px 8px;border-radius:4px}
-.importance-high{background:var(--red-bg);color:var(--red)}
-.importance-medium{background:var(--yellow-bg);color:var(--yellow)}
-.importance-low{background:var(--green-bg);color:var(--green)}
-.memory-time{font-size:0.75rem;color:var(--text-muted)}
-.memory-content{font-size:0.9rem;line-height:1.6;color:var(--text-primary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.memory-content.expanded{-webkit-line-clamp:unset}
-.memory-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.memory-tag{font-size:0.7rem;padding:2px 8px;border-radius:10px;background:var(--bg-tertiary);color:var(--accent);cursor:pointer}
-.memory-tag:hover{background:var(--accent);color:white}
-.memory-actions{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
-.action-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-secondary);font-size:0.75rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:4px}
-.action-btn:hover{border-color:var(--border-light);color:var(--text-primary)}
-.action-btn.delete:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
-.action-btn.copy:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
-.action-btn.md:hover{border-color:var(--accent);color:var(--accent);background:rgba(102,126,234,0.1)}
-.expand-btn{background:none;border:none;color:var(--accent);font-size:0.8rem;cursor:pointer;padding:4px 0;margin-top:8px}
-.memory-preview{position:absolute;left:0;right:0;top:100%;margin-top:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:16px;z-index:100;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-height:300px;overflow-y:auto}
-.memory-card:hover .memory-preview{display:block;animation:fadeIn 0.15s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.memory-preview h4{font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px}
-.memory-preview p{font-size:0.85rem;line-height:1.6;color:var(--text-primary);white-space:pre-wrap;word-break:break-word}
-.memory-preview .preview-meta{display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)}
-.memory-card.keyboard-nav{border-color:var(--accent);box-shadow:0 0 0 2px rgba(102,126,234,0.3)}
-.empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
-.empty-state-icon{font-size:48px;margin-bottom:16px;opacity:0.5}
-.empty-state h3{font-size:1.25rem;margin-bottom:8px;color:var(--text-primary)}
-.empty-state p{margin-bottom:20px}
-.loading{display:flex;align-items:center;justify-content:center;padding:40px}
-.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognexia</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#e8e8e8;--text2:#999;--text3:#666;--accent:#6366f1;--accent2:#818cf8;--danger:#ef4444;--success:#22c55e}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;font-size:14px}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.logo{font-size:16px;font-weight:600;color:var(--text)}.logo span{color:#818cf8}
+.search-box{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:0 12px;gap:8px;width:280px}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;padding:8px 0;width:100%}
+.search-box input::placeholder{color:var(--text3)}
+.btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:background 0.15s;white-space:nowrap}
+.btn:hover{background:var(--bg2)}.btn-primary{background:#6366f1;border-color:#6366f1;color:#fff}.btn-primary:hover{background:#5558e8}
+.btn-danger{color:var(--danger);border-color:rgba(239,68,68,0.3)}.btn-danger:hover{background:rgba(239,68,68,0.1)}
+.layout{display:flex;flex:1;overflow:hidden}
+sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-section{padding:16px 12px 8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+.project-item{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;cursor:pointer;border-radius:6px;margin:1px 8px;color:var(--text2);transition:all 0.1s}
+.project-item:hover{background:var(--bg3);color:var(--text)}
+.project-item.active{background:var(--bg3);color:var(--text);border-left:2px solid #6366f1;padding-left:14px}
+.project-name{font-size:13px}.project-count{font-size:11px;background:var(--bg2);color:var(--text3);padding:1px 7px;border-radius:10px;min-width:20px;text-align:center}
+.project-item.active .project-count{background:#6366f1;color:#fff}
+.view-toggle{display:flex;gap:4px;padding:12px;border-top:1px solid var(--border);margin-top:auto}
+.view-btn{flex:1;padding:6px;border:1px solid var(--border2);background:none;color:var(--text3);border-radius:6px;cursor:pointer;font-size:12px;text-align:center;transition:all 0.1s}
+.view-btn.active{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+main{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-select{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;outline:none}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em}
+.stat-value{font-size:22px;font-weight:600;color:var(--text)}
+.memories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.memory-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color 0.15s;position:relative}
+.memory-card:hover{border-color:var(--border2)}
+.memory-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.type-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em}
+.type-insight{background:rgba(99,102,241,0.15);color:#818cf8}
+.type-goal{background:rgba(245,158,11,0.15);color:#fbbf24}
+.type-milestone{background:rgba(34,197,94,0.15);color:#4ade80}
+.type-preference{background:rgba(6,182,212,0.15);color:#22d3ee}
+.type-error{background:rgba(239,68,68,0.15);color:#f87171}
+.type-security{background:rgba(249,115,22,0.15);color:#fb923c}
+.importance-dot{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}.dot.high{background:#f59e0b}.dot.critical{background:#ef4444}
+.memory-content{font-size:13px;line-height:1.6;color:var(--text);margin-bottom:10px;word-break:break-word}
+.memory-footer{display:flex;align-items:center;justify-content:space-between}
+.memory-meta{font-size:11px;color:var(--text3)}
+.memory-actions{display:flex;gap:6px;opacity:0;transition:opacity 0.15s}
+.memory-card:hover .memory-actions{opacity:1}
+.icon-btn{background:none;border:1px solid var(--border2);color:var(--text2);padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;transition:all 0.1s}
+.icon-btn:hover{background:var(--bg3);color:var(--text)}.icon-btn.del:hover{background:rgba(239,68,68,0.1);color:var(--danger);border-color:rgba(239,68,68,0.3)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}.empty-state h3{font-size:16px;color:var(--text2);margin-bottom:8px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:17px;margin-bottom:20px;color:var(--text)}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;transition:border-color 0.15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#6366f1}
+.form-textarea{resize:vertical;min-height:100px;line-height:1.6}
+.importance-row{display:flex;align-items:center;gap:12px}
+.importance-row input[type=range]{flex:1;accent-color:#6366f1}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.graph-container{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+canvas#graphCanvas{display:block;width:100%;cursor:grab}
+canvas#graphCanvas:active{cursor:grabbing}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 18px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}.toast.success{border-color:rgba(34,197,94,0.4);color:#4ade80}.toast.error{border-color:rgba(239,68,68,0.4);color:#f87171}
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);font-size:13px;gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:#6366f1;border-radius:50%;animation:spin 0.7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.sync-indicator{font-size:0.75rem;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;transition:all 0.2s}
-.sync-indicator.saving{color:var(--yellow);background:var(--yellow-bg)}
-.sync-indicator.saved{color:var(--green);background:var(--green-bg)}
-.sync-indicator.error{color:var(--red);background:var(--red-bg)}
-.autosave-indicator.saving{color:var(--yellow)}
-.autosave-indicator.saved{color:var(--green)}
-.autosave-indicator.error{color:var(--red)}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;visibility:hidden;transition:opacity 0.2s,visibility 0.2s}
-.modal-overlay.active{opacity:1;visibility:visible}
-.modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;transform:scale(0.95);transition:transform 0.2s}
-.modal-overlay.active .modal{transform:scale(1)}
-.modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-header h3{font-size:1.1rem;font-weight:600}
-.modal-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px;line-height:1}
-.modal-close:hover{color:var(--text-primary)}
-.modal-body{padding:20px}
-.form-group{margin-bottom:20px}
-.form-group label{display:block;font-size:0.8rem;font-weight:500;margin-bottom:8px;color:var(--text-secondary)}
-.form-group textarea,.form-group select{width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.875rem;color:var(--text-primary);outline:none;font-family:inherit;transition:border-color 0.15s}
-.form-group textarea{min-height:120px;resize:vertical}
-.form-group textarea:focus{border-color:var(--accent)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.slider-group{display:flex;align-items:center;gap:12px}
-.slider-group input[type=range]{flex:1;-webkit-appearance:none;height:6px;background:var(--bg-primary);border-radius:3px;outline:none}
-.slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
-.slider-value{min-width:24px;text-align:center;font-weight:600;color:var(--accent)}
-.modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.modal-footer.center{justify-content:center}
-.modal-footer-left{display:flex;gap:8px;align-items:center}
-.confirm-modal .modal{max-width:400px}
-.confirm-message{text-align:center;font-size:1rem;color:var(--text-primary);margin-bottom:8px}
-.confirm-submessage{text-align:center;font-size:0.875rem;color:var(--text-secondary)}
-.settings-section{margin-bottom:24px}
-.settings-section:last-child{margin-bottom:0}
-.settings-section h4{font-size:0.9rem;font-weight:600;margin-bottom:12px;color:var(--text-primary)}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.settings-row:last-child{border-bottom:none}
-.settings-label{font-size:0.875rem;color:var(--text-secondary)}
-.settings-value{font-size:0.875rem;color:var(--accent);font-weight:500}
-.search-results{position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:400px;overflow-y:auto;z-index:50;display:none}
-.search-results.active{display:block}
-.search-result-item{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
-.search-result-item:last-child{border-bottom:none}
-.search-result-item:hover{background:var(--bg-tertiary)}
-.search-result-content{font-size:0.875rem;line-height:1.5;margin-bottom:6px}
-.search-result-meta{font-size:0.75rem;color:var(--text-muted)}
-.stats-bar{display:flex;gap:24px;margin-bottom:20px;padding:12px 16px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border)}
-.stat{display:flex;align-items:center;gap:8px}
-.stat-value{font-size:1.1rem;font-weight:600;color:var(--accent)}
-.stat-label{font-size:0.8rem;color:var(--text-muted)}
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:8px}
-.toast{padding:12px 20px;border-radius:8px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);font-size:0.875rem;animation:toastIn 0.3s ease;display:flex;align-items:center;gap:8px}
-.toast.success{border-color:var(--green);background:var(--green-bg)}
-.toast.error{border-color:var(--red);background:var(--red-bg)}
-@keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.graph-container{position:relative;width:100%;height:calc(100vh - 180px);background:var(--bg-card);border-radius:10px;border:1px solid var(--border);overflow:hidden}
-#graphCanvas{width:100%;height:100%;cursor:grab}
-#graphCanvas:active{cursor:grabbing}
-.graph-tooltip{position:absolute;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.8rem;pointer-events:none;z-index:10;max-width:250px;display:none}
-.graph-tooltip h4{font-size:0.85rem;margin-bottom:4px}
-.graph-tooltip p{color:var(--text-secondary);font-size:0.75rem}
-.graph-legend{position:absolute;bottom:16px;left:16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.75rem}
-.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.legend-item:last-child{margin-bottom:0}
-.legend-dot{width:10px;height:10px;border-radius:50%}
-.graph-controls{position:absolute;top:16px;right:16px;display:flex;flex-direction:column;gap:8px}
-.graph-controls .btn{padding:8px}
-.backlinks-panel{position:fixed;right:-400px;top:0;bottom:0;width:400px;background:var(--bg-secondary);border-left:1px solid var(--border);z-index:90;transition:right 0.3s;overflow-y:auto}
-.backlinks-panel.open{right:0}
-.backlinks-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.backlinks-header h3{font-size:1rem}
-.backlinks-list{padding:16px}
-.backlink-item{padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer;transition:border-color 0.15s}
-.backlink-item:hover{border-color:var(--border-light)}
-.backlink-preview{font-size:0.85rem;line-height:1.5;color:var(--text-primary);margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.backlink-meta{font-size:0.75rem;color:var(--text-muted);display:flex;gap:12px}
-.backlink-score{color:var(--accent)}
-.no-backlinks{text-align:center;padding:40px;color:var(--text-muted)}
-.footer{background:var(--bg-secondary);border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;color:var(--text-muted)}
-.storage-info{display:flex;align-items:center;gap:16px}
-.storage-item{display:flex;align-items:center;gap:4px}
-::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
-@media(max-width:768px){.form-row{grid-template-columns:1fr}.filter-bar{flex-direction:column}}
-  
-/* Command Palette */
-.command-palette-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;opacity:0;visibility:hidden;transition:opacity 0.15s,visibility 0.15s}
-.command-palette-overlay.active{opacity:1;visibility:visible}
-.command-palette{background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;width:90%;max-width:560px;box-shadow:0 16px 48px rgba(0,0,0,0.5);overflow:hidden;transform:scale(0.95);transition:transform 0.15s}
-.command-palette-overlay.active .command-palette{transform:scale(1)}
-.command-palette-input-wrap{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:10px}
-.command-palette-input-wrap .cmd-icon{font-size:16px;opacity:0.6}
-.command-palette-input{background:none;border:none;flex:1;font-size:1rem;color:var(--text-primary);outline:none;font-family:inherit}
-.command-palette-input::placeholder{color:var(--text-muted)}
-.command-palette-results{max-height:360px;overflow-y:auto}
-.command-palette-section{padding:8px 0}
-.command-palette-section-title{padding:6px 16px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)}
-.command-item{padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.1s}
-.command-item:hover,.command-item.selected{background:var(--bg-tertiary)}
-.command-item .cmd-label{flex:1;font-size:0.9rem}
-.command-item .cmd-shortcut{font-size:0.7rem;color:var(--text-muted);padding:2px 6px;background:var(--bg-primary);border-radius:4px;border:1px solid var(--border)}
-.command-item .cmd-icon{font-size:14px;width:24px;text-align:center}
-.command-item .cmd-description{font-size:0.75rem;color:var(--text-muted);margin-left:auto}
-.command-palette-footer{padding:8px 16px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:0.7rem;color:var(--text-muted)}
-.command-palette-footer kbd{padding:1px 4px;background:var(--bg-primary);border-radius:3px;border:1px solid var(--border)}
-
-/* Daily Digest */
-.digest-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:24px}
-.digest-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.digest-header h3{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:8px}
-.digest-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px}
-.digest-close:hover{color:var(--text-primary)}
-.digest-project{margin-bottom:16px}
-.digest-project:last-child{margin-bottom:0}
-.digest-project-header{font-size:0.8rem;font-weight:600;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.digest-project-header .count{font-size:0.7rem;background:var(--bg-tertiary);padding:1px 6px;border-radius:8px;color:var(--text-muted)}
-.digest-memories{display:flex;flex-direction:column;gap:8px}
-.digest-memory{padding:10px 12px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:border-color 0.15s;font-size:0.85rem}
-.digest-memory:hover{border-color:var(--border-light)}
-.digest-memory .digest-type{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--text-muted);margin-bottom:4px}
-.digest-memory .digest-content{color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* Templates Modal */
-.template-item{padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;position:relative}
-.template-item:hover{border-color:var(--accent);background:rgba(102,126,234,0.05)}
-.template-item:last-child{margin-bottom:0}
-.template-item .t-name{font-size:0.9rem;font-weight:500;margin-bottom:4px}
-.template-item .t-meta{font-size:0.75rem;color:var(--text-muted)}
-.template-item .t-preview{font-size:0.8rem;color:var(--text-secondary);margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.template-item .t-delete{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 6px;opacity:0;transition:opacity 0.15s}
-.template-item:hover .t-delete{opacity:1}
-.template-item .t-delete:hover{color:var(--red)}
-.template-list{max-height:300px;overflow-y:auto}
-.recent-searches{position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:300px;overflow-y:auto;z-index:50;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-.recent-searches.active{display:block}
-.recent-search-header{padding:8px 12px;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);border-bottom:1px solid var(--border)}
-.recent-search-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:0.85rem}
-.recent-search-item:last-child{border-bottom:none}
-.recent-search-item:hover{background:var(--bg-tertiary)}
-.recent-search-item .query{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.recent-search-item .remove-search{opacity:0;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:2px 4px;transition:opacity 0.15s}
-.recent-search-item:hover .remove-search{opacity:1}
-.action-btn.open-tab:hover{border-color:var(--accent);color:var(--accent);background:rgba(102,126,234,0.1)}
+.section-heading{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px}
 </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">◀</button>
-      <div class="sidebar-header"><h1>Cognexia</h1><p>Memory Browser</p></div>
-      <div class="sidebar-section"><button class="btn btn-primary" id="newMemoryBtn" style="width:100%"><span>+</span><span> New Memory</span></button></div>
-      <div class="sidebar-section"><div class="sidebar-section-title">Projects</div></div>
-      <div class="project-list" id="projectList"></div>
-    </aside>
-    <main class="main">
-      <div class="topbar">
-        <div class="search-container">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="searchInput" placeholder="Search memories... (/)">
-          <div class="search-results" id="searchResults"></div>
-          <div class="recent-searches" id="recentSearches"></div>
-        </div>
-        <div class="topbar-actions">
-          <span class="sync-indicator" id="syncIndicator"></span>
-          <button class="btn btn-sm" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
-          <select class="font-select" id="fontSizeSelect" title="Font size">
-            <option value="small">A-</option>
-            <option value="medium" selected>A</option>
-            <option value="large">A+</option>
-          </select>
-          <button class="theme-btn" id="themeToggle" title="Toggle theme">🌙</button>
-          <div class="export-dropdown">
-            <button class="btn btn-sm" id="exportBtn">📥 Export</button>
-            <div class="export-menu" id="exportMenu">
-              <div class="export-menu-item" onclick="exportMemories('json','current')">📄 Export Current (JSON)</div>
-              <div class="export-menu-item" onclick="exportMemories('markdown','current')">📝 Export Current (Markdown)</div>
-              <div class="export-menu-item" onclick="exportMemories('json','all')">📦 Export All (JSON)</div>
-              <div class="export-menu-item" onclick="exportMemories('markdown','all')">📋 Export All (Markdown)</div>
-            </div>
-          </div>
-          <button class="btn btn-sm" id="settingsBtn" title="Settings (Cmd+,)">⚙️</button>
-          <div class="view-toggle">
-            <button class="btn active" id="timelineViewBtn" title="Timeline (T)">📅</button>
-            <button class="btn" id="graphViewBtn" title="Graph (G)">🕸️</button>
-          </div>
-        </div>
-      </div>
-      <div class="content" id="content"><div class="loading" id="loading"><div class="spinner"></div></div></div>
-      <div class="footer">
-        <div class="storage-info">
-          <span class="storage-item" id="storageSize">Storage: calculating...</span>
-          <span class="storage-item" id="memoryCountFooter">0 memories total</span>
-        </div>
-        <div>Shortcuts: <kbd>/</kbd> search <kbd>N</kbd> new <kbd>G</kbd> graph <kbd>T</kbd> timeline <kbd>Esc</kbd> close</div>
-      </div>
-    </main>
-  </div>
-  
-  <div class="modal-overlay" id="memoryModal">
-    <div class="modal">
-      <div class="modal-header"><h3 id="memoryModalTitle">Add New Memory</h3><button class="modal-close" id="closeModal">×</button></div>
-      <div class="modal-body">
-        <form id="memoryForm">
-          <input type="hidden" id="editMemoryId" value="">
-          <div class="form-group"><label for="memoryContent">Content <span style="color:var(--text-muted);font-weight:normal">(use #tags)</span></label><textarea id="memoryContent" placeholder="What do you want to remember?" required></textarea></div>
-          <div class="form-row">
-            <div class="form-group"><label for="memoryType">Type</label><select id="memoryType"><option value="insight">Insight</option><option value="preference">Preference</option><option value="error">Error</option><option value="goal">Goal</option><option value="milestone">Milestone</option><option value="security">Security</option></select></div>
-            <div class="form-group"><label for="memoryProject">Project</label><select id="memoryProject"></select></div>
-          </div>
-          <div class="form-group"><label for="memoryImportance">Importance (1-10)</label><div class="slider-group"><input type="range" id="memoryImportance" min="1" max="10" value="5"><span class="slider-value" id="importanceValue">5</span></div></div>
-          <div class="form-group">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-              <input type="checkbox" id="memoryPublished" style="width:18px;height:18px;cursor:pointer">
-              <span>🌐 Publish to web</span>
-            </label>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;margin-left:28px">Published memories get a public URL at /p/:id</p>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <div class="modal-footer-left"><span id="autosaveStatus" style="font-size:0.75rem;color:var(--text-muted)"></span></div>
-        <div style="display:flex;gap:10px"><button class="btn" id="cancelMemory">Cancel</button><button class="btn btn-primary" id="saveMemory">Save Memory</button></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay confirm-modal" id="confirmModal">
-    <div class="modal">
-      <div class="modal-header"><h3>Confirm</h3><button class="modal-close" id="closeConfirm">×</button></div>
-      <div class="modal-body"><p class="confirm-message" id="confirmMessage">Delete this memory?</p><p class="confirm-submessage" id="confirmSubmessage">This action cannot be undone.</p></div>
-      <div class="modal-footer center"><button class="btn" id="cancelConfirm">Cancel</button><button class="btn btn-danger" id="confirmAction">Delete</button></div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal">
-      <div class="modal-header"><h3>Settings</h3><button class="modal-close" id="closeSettings">×</button></div>
-      <div class="modal-body">
-        <div class="settings-section">
-          <h4>Appearance</h4>
-          <div class="settings-row"><span class="settings-label">Theme</span><span class="settings-value" id="settingsTheme">Dark</span></div>
-          <div class="settings-row"><span class="settings-label">Font Size</span><span class="settings-value" id="settingsFontSize">Medium</span></div>
-          <div class="settings-row"><span class="settings-label">Sidebar</span><span class="settings-value" id="settingsSidebar">Expanded</span></div>
-        </div>
-        <div class="settings-section">
-          <h4>Storage</h4>
-          <div class="settings-row"><span class="settings-label">localStorage Used</span><span class="settings-value" id="settingsStorageSize">-</span></div>
-          <div class="settings-row"><span class="settings-label">Total Memories</span><span class="settings-value" id="settingsTotalMemories">-</span></div>
-        </div>
-        <div class="settings-section">
-          <h4>Storage</h4>
-          <div class="settings-row"><span class="settings-label">Data Lake Path</span><input type="text" id="settingsDataLakePath" value="~/.openclaw/data-lake" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);width:220px" onclick="this.select()" onchange="localStorage.setItem('cognexia_datalake_path',this.value)"></div>
-        </div>
-        <div class="settings-section">
-          <h4>Local Folder Sync</h4>
-          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-            <span class="settings-label">Sync Folder Path</span>
-            <input type="text" id="settingsSyncPath" value="" placeholder="/Volumes/NAS/Cognexia or /mnt/data/Cognexia" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.8rem;color:var(--text-primary);width:100%" onclick="this.select()" onchange="localStorage.setItem('cognexia_sync_path',this.value)">
-          </div>
-          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-            <span class="settings-label">Last Sync</span>
-            <span id="settingsLastSync" style="font-size:0.8rem;color:var(--text-muted)">Never</span>
-          </div>
-          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-            <span class="settings-label">Sync Status</span>
-            <span id="settingsSyncStatus" style="font-size:0.8rem;color:var(--text-muted)">-</span>
-          </div>
-          <div class="settings-row" style="gap:8px;margin-top:8px">
-            <button class="btn btn-sm" onclick="syncExportMemories()" id="syncExportBtn" style="flex:1">📤 Export</button>
-            <button class="btn btn-sm" onclick="syncImportMemories()" id="syncImportBtn" style="flex:1">📥 Import</button>
-            <button class="btn btn-sm btn-primary" onclick="syncNow()" id="syncNowBtn" style="flex:1">🔄 Sync Now</button>
-          </div>
-        </div>
-        <div class="settings-section">
-          <h4>Data</h4>
-          <div class="settings-row"><span class="settings-label">Clear All Memories</span><button class="btn btn-sm btn-danger" onclick="clearAllData()">Clear All</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="backlinks-panel" id="backlinksPanel">
-    <div class="backlinks-header"><h3>📎 Backlinks</h3><button class="modal-close" id="closeBacklinks">×</button></div>
-    <div class="backlinks-list" id="backlinksList"></div>
-  </div>
-
-  <div class="modal-overlay" id="markdownModal">
-    <div class="modal" style="max-width:900px;width:95vw">
-      <div class="modal-header"><h3 id="mdModalTitle">📝 Edit as Markdown</h3><button class="modal-close" id="closeMarkdownModal">×</button></div>
-      <div class="modal-body" style="padding:0;max-height:75vh;display:flex;flex-direction:column">
-        <div class="md-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-sm" onclick="mdInsertText('**','**')" title="Bold"><b>B</b></button>
-          <button class="btn btn-sm" onclick="mdInsertText('*','*')" title="Italic"><i>I</i></button>
-          <button class="btn btn-sm" onclick="mdInsertText('# ','')" title="Heading 1">H1</button>
-          <button class="btn btn-sm" onclick="mdInsertText('## ','')" title="Heading 2">H2</button>
-          <button class="btn btn-sm" onclick="mdInsertText('### ','')" title="Heading 3">H3</button>
-          <button class="btn btn-sm" onclick="mdInsertText('- ','')" title="List">•</button>
-          <button class="btn btn-sm" onclick="mdInsertText('1. ','')" title="Numbered List">1.</button>
-          <button class="btn btn-sm" onclick="mdInsertText('`','`')" title="Inline Code">`</button>
-          <button class="btn btn-sm" onclick="mdInsertText('\n```\n','\n```\n')" title="Code Block"><>&lt;</></button>
-          <button class="btn btn-sm" onclick="mdInsertText('[','](url)')" title="Link">[🔗]</button>
-          <button class="btn btn-sm" onclick="mdInsertText('> ','')" title="Quote">"</button>
-          <span style="flex:1"></span>
-          <div class="md-view-toggle" style="display:flex;gap:4px">
-            <button class="btn btn-sm active" id="mdEditBtn" onclick="setMdView('edit')">Edit</button>
-            <button class="btn btn-sm" id="mdPreviewBtn" onclick="setMdView('preview')">Preview</button>
-            <button class="btn btn-sm" id="mdSplitBtn" onclick="setMdView('split')">Split</button>
-          </div>
-        </div>
-        <div class="md-editor-container" style="flex:1;display:flex;min-height:400px">
-          <div class="md-editor-pane" id="mdEditorPane" style="flex:1;display:flex">
-            <textarea id="mdEditorContent" style="flex:1;border:none;background:var(--bg-primary);color:var(--text-primary);padding:16px;font-family:monospace;font-size:14px;line-height:1.6;resize:none;outline:none" placeholder="Write your memory in Markdown..."></textarea>
-          </div>
-          <div class="md-preview-pane" id="mdPreviewPane" style="flex:1;display:none;border-left:1px solid var(--border);padding:16px;overflow-y:auto;background:var(--bg-card)">
-            <div id="mdPreviewContent"></div>
-          </div>
-        </div>
-        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-          <span id="mdStatus" style="font-size:0.75rem;color:var(--text-muted)"></span>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="mdCancelBtn" onclick="closeMarkdownModal()">Cancel</button>
-            <button class="btn btn-primary" id="mdSaveBtn" onclick="saveMarkdownMemory()">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast-container" id="toastContainer"></div>
-
+<header>
+<div class="logo">Cogn<span>exia</span></div>
+<div class="search-box">
+<span style="color:var(--text3);font-size:14px">&#9906;</span>
+<input type="text" id="searchInput" placeholder="Search memories..." autocomplete="off">
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<button class="btn btn-primary" onclick="openAddModal()">+ New Memory</button>
+</div>
+</header>
+<div class="layout">
+<sidebar>
+<div class="sidebar-section">Projects</div>
+<div id="projectList"></div>
+<div class="view-toggle">
+<button class="view-btn active" id="viewTimeline" onclick="setView('timeline')">Timeline</button>
+<button class="view-btn" id="viewGraph" onclick="setView('graph')">Graph</button>
+</div>
+</sidebar>
+<main id="mainContent">
+<div class="loading"><div class="spinner"></div> Loading...</div>
+</main>
+</div>
+<div class="modal-overlay hidden" id="modalOverlay">
+<div class="modal">
+<h2 id="modalTitle">New Memory</h2>
+<input type="hidden" id="editId">
+<div class="form-group">
+<label class="form-label">Content</label>
+<textarea class="form-textarea" id="memContent" placeholder="What do you want to remember?"></textarea>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group">
+<label class="form-label">Type</label>
+<select class="form-select" id="memType">
+<option value="insight">Insight</option>
+<option value="goal">Goal</option>
+<option value="milestone">Milestone</option>
+<option value="preference">Preference</option>
+<option value="error">Error / Lesson</option>
+<option value="security">Security</option>
+</select>
+</div>
+<div class="form-group">
+<label class="form-label">Project</label>
+<select class="form-select" id="memProject"></select>
+</div>
+</div>
+<div class="form-group">
+<label class="form-label">Importance: <span id="importanceDisplay">7</span></label>
+<div class="importance-row">
+<span style="font-size:11px;color:var(--text3)">1</span>
+<input type="range" min="1" max="10" value="7" id="memImportance" oninput="document.getElementById('importanceDisplay').textContent=this.value" step="1">
+<span style="font-size:11px;color:var(--text3)">10</span>
+</div>
+</div>
+<div class="modal-actions">
+<button class="btn" onclick="closeModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveMemory()">Save Memory</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
 <script>
-let currentProject='general',projects=[],searchTimeout=null,allMemories=[],selectedMemories=new Set(),filterType='all',filterImportance='all',sortOrder='newest',confirmCallback=null,currentView='timeline',filterTag=null,allTags=[];
-let undoStack=[],autosaveTimer=null,sidebarCollapsed=false,selectedTemplate=null,digestDismissed=false,kbNavIndex=-1,kbNavMemories=[]
-const projectList=document.getElementById('projectList'),content=document.getElementById('content'),searchInput=document.getElementById('searchInput'),searchResults=document.getElementById('searchResults'),memoryModal=document.getElementById('memoryModal'),importanceSlider=document.getElementById('memoryImportance'),importanceValue=document.getElementById('importanceValue'),memoryProjectSelect=document.getElementById('memoryProject'),confirmModal=document.getElementById('confirmModal'),toastContainer=document.getElementById('toastContainer'),backlinksPanel=document.getElementById('backlinksPanel'),sidebar=document.getElementById('sidebar');
-
-// Preferences (localStorage)
-function loadPreferences(){
-  const theme=localStorage.getItem('cognexia_theme')||'dark';
-  const fontSize=localStorage.getItem('cognexia_fontsize')||'medium';
-  const collapsed=localStorage.getItem('cognexia_sidebar')==='true';
-  document.documentElement.setAttribute('data-theme',theme);
-  document.documentElement.setAttribute('data-font-size',fontSize);
-  document.getElementById('themeToggle').textContent=theme==='dark'?'🌙':'☀️';
-  document.getElementById('fontSizeSelect').value=fontSize;
-  if(collapsed){
-    sidebar.classList.add('collapsed');
-    sidebarCollapsed=true;
-    document.getElementById('sidebarToggle').textContent='▶';
-  }
-  digestDismissed=localStorage.getItem('cognexia_digest_dismissed')===new Date().toISOString().split('T')[0];
-  updateSettingsDisplay();
-}
-function savePreference(key,value){localStorage.setItem('cognexia_'+key,value)}
-function updateSettingsDisplay(){
-  const theme=localStorage.getItem('cognexia_theme')||'dark';
-  const fontSize=localStorage.getItem('cognexia_fontsize')||'medium';
-  const dataLakePath=localStorage.getItem('cognexia_datalake_path')||'~/.openclaw/data-lake';
-  const syncPath=localStorage.getItem('cognexia_sync_path')||'';
-  const lastSync=localStorage.getItem('cognexia_last_sync')||'Never';
-  document.getElementById('settingsTheme').textContent=theme.charAt(0).toUpperCase()+theme.slice(1);
-  document.getElementById('settingsFontSize').textContent=fontSize.charAt(0).toUpperCase()+fontSize.slice(1);
-  document.getElementById('settingsSidebar').textContent=sidebarCollapsed?'Collapsed':'Expanded';
-  if(document.getElementById('settingsDataLakePath'))document.getElementById('settingsDataLakePath').value=dataLakePath;
-  if(document.getElementById('settingsSyncPath'))document.getElementById('settingsSyncPath').value=syncPath;
-  if(document.getElementById('settingsLastSync'))document.getElementById('settingsLastSync').textContent=lastSync==='Never'?'Never':new Date(lastSync).toLocaleString();
-}
-function updateStorageDisplay(){
-  let total=0;
-  for(let key in localStorage){
-    if(key.startsWith('cognexia_')){try{total+=localStorage.getItem(key).length*2;}catch(e){}}
-  }
-  let sizeStr=total>1024*1024?(total/(1024*1024)).toFixed(2)+' MB':total>1024?(total/1024).toFixed(1)+' KB':total+' B';
-  document.getElementById('storageSize').textContent='Storage: '+sizeStr;
-  let memCount=0;
-  for(let key in localStorage){if(key.startsWith('cognexia_memories_'))memCount++;}
-  document.getElementById('memoryCountFooter').textContent=memCount+' memories total';
-  document.getElementById('settingsStorageSize').textContent=sizeStr;
-  document.getElementById('settingsTotalMemories').textContent=memCount;
-}
-function setSyncStatus(status,message){
-  const el=document.getElementById('syncIndicator');
-  if(!el)return;
-  el.className='sync-indicator '+status;
-  if(status==='saving'){el.textContent='💾 Saving...';el.style.display='flex';}
-  else if(status==='saved'){el.textContent='✓ Saved';setTimeout(()=>{if(el.classList.contains('saved'))el.style.display='none';},2000);}
-  else if(status==='error'){el.textContent='✗ Error';setTimeout(()=>{if(el.classList.contains('error'))el.style.display='none';},3000);}
-  else el.style.display='none';
-}
-
-// Sync functions
-async function syncExportMemories(){
-  const syncPath=localStorage.getItem('cognexia_sync_path');
-  if(!syncPath){showToast('Please set a sync folder path first');return;}
-  
-  const btn=document.getElementById('syncExportBtn');
-  btn.disabled=true;
-  btn.textContent='📤 Exporting...';
-  
-  try {
-    const res=await fetch('/api/sync/export',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({syncPath,project:currentProject})
-    });
-    const data=await res.json();
-    if(data.success){
-      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
-      updateSettingsDisplay();
-      showToast(`Exported ${data.data.exported} memories`);
-    } else {
-      showToast('Export failed: '+data.error);
-    }
-  } catch(e){
-    showToast('Export error: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.textContent='📤 Export';
-  }
-}
-
-async function syncImportMemories(){
-  const syncPath=localStorage.getItem('cognexia_sync_path');
-  if(!syncPath){showToast('Please set a sync folder path first');return;}
-  
-  const btn=document.getElementById('syncImportBtn');
-  btn.disabled=true;
-  btn.textContent='📥 Importing...';
-  
-  try {
-    const res=await fetch('/api/sync/import',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({syncPath,project:currentProject,mode:'merge'})
-    });
-    const data=await res.json();
-    if(data.success){
-      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
-      updateSettingsDisplay();
-      showToast(`Imported ${data.data.imported} memories, skipped ${data.data.skipped}`);
-      loadMemories();
-    } else {
-      showToast('Import failed: '+data.error);
-    }
-  } catch(e){
-    showToast('Import error: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.textContent='📥 Import';
-  }
-}
-
-async function syncNow(){
-  const syncPath=localStorage.getItem('cognexia_sync_path');
-  if(!syncPath){showToast('Please set a sync folder path first');return;}
-  
-  const btn=document.getElementById('syncNowBtn');
-  const statusEl=document.getElementById('settingsSyncStatus');
-  btn.disabled=true;
-  btn.textContent='🔄 Syncing...';
-  if(statusEl)statusEl.textContent='Syncing...';
-  
-  try {
-    const res=await fetch('/api/sync/sync',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({syncPath,project:currentProject})
-    });
-    const data=await res.json();
-    if(data.success){
-      localStorage.setItem('cognexia_last_sync',new Date().toISOString());
-      updateSettingsDisplay();
-      let msg=`Synced: ${data.data.imported} imported, ${data.data.exported} exported`;
-      if(data.data.conflicts>0){
-        msg+=`, ${data.data.conflicts} conflicts`;
-      }
-      showToast(msg);
-      loadMemories();
-    } else {
-      showToast('Sync failed: '+data.error);
-    }
-  } catch(e){
-    showToast('Sync error: '+e.message);
-  } finally {
-    btn.disabled=false;
-    btn.textContent='🔄 Sync Now';
-    if(statusEl)statusEl.textContent='Ready';
-  }
-}
-
-async function checkSyncStatus(){
-  const syncPath=localStorage.getItem('cognexia_sync_path');
-  if(!syncPath)return;
-  
-  try {
-    const res=await fetch(`/api/sync/status?path=${encodeURIComponent(syncPath)}`);
-    const data=await res.json();
-    if(data.success){
-      const statusEl=document.getElementById('settingsSyncStatus');
-      if(statusEl){
-        statusEl.textContent=`${data.data.memoriesInDb} in DB, ${data.data.memoriesInFolder} in folder`;
-      }
-    }
-  } catch(e){
-    console.log('Sync status check failed:',e.message);
-  }
-}
-
-// Theme toggle
-document.getElementById('themeToggle').addEventListener('click',()=>{
-  const current=document.documentElement.getAttribute('data-theme');
-  const next=current==='dark'?'light':'dark';
-  document.documentElement.setAttribute('data-theme',next);
-  document.getElementById('themeToggle').textContent=next==='dark'?'🌙':'☀️';
-  savePreference('theme',next);
-  updateSettingsDisplay();
-});
-
-// Font size
-document.getElementById('fontSizeSelect').addEventListener('change',(e)=>{
-  document.documentElement.setAttribute('data-font-size',e.target.value);
-  savePreference('fontsize',e.target.value);
-  updateSettingsDisplay();
-});
-
-// Sidebar toggle
-document.getElementById('sidebarToggle').addEventListener('click',()=>{
-  sidebarCollapsed=!sidebarCollapsed;
-  sidebar.classList.toggle('collapsed',sidebarCollapsed);
-  document.getElementById('sidebarToggle').textContent=sidebarCollapsed?'▶':'◀';
-  savePreference('sidebar',sidebarCollapsed);
-  updateSettingsDisplay();
-});
-
-// Settings modal
-document.getElementById('settingsBtn').addEventListener('click',()=>{updateStorageDisplay();updateSettingsDisplay();checkSyncStatus();document.getElementById('settingsModal').classList.add('active');});
-document.getElementById('closeSettings').addEventListener('click',()=>document.getElementById('settingsModal').classList.remove('active'));
-document.getElementById('settingsModal').addEventListener('click',(e)=>{if(e.target===document.getElementById('settingsModal'))document.getElementById('settingsModal').classList.remove('active')});
-
-function clearAllData(){if(confirm('This will delete ALL memories. Are you sure?')){localStorage.clear();showToast('All data cleared');document.getElementById('settingsModal').classList.remove('active');location.reload();}}
-
-// Export functionality
-function exportMemories(format,scope){
-  document.getElementById('exportMenu').classList.remove('open');
-  let memoriesToExport=[];
-  if(scope==='all'){
-    for(let key in localStorage){
-      if(key.startsWith('cognexia_memories_')){
-        try{const projMemories=JSON.parse(localStorage.getItem(key));if(Array.isArray(projMemories))memoriesToExport=memoriesToExport.concat(projMemories);}catch(e){}
-      }
-    }
-  } else {memoriesToExport=allMemories;}
-  if(memoriesToExport.length===0){showToast('No memories to export','error');return;}
-  let content,filename,mimeType;
-  if(format==='json'){content=JSON.stringify(memoriesToExport,null,2);filename='cognexia_export_'+new Date().toISOString().split('T')[0]+'.json';mimeType='application/json';}
-  else{content='# Cognexia Memory Export\n\nExported: '+new Date().toLocaleString()+'\n\n';memoriesToExport.forEach((m,i)=>{content+='## '+m.content_type.toUpperCase()+' - '+new Date(m.created_at).toLocaleDateString()+'\n\n'+m.content+'\n\n- Type: '+m.content_type+'\n- Importance: '+m.importance+'/10\n- Project: '+(m.project||'general')+'\n\n---\n\n';});filename='cognexia_export_'+new Date().toISOString().split('T')[0]+'.md';mimeType='text/markdown';}
-  const blob=new Blob([content],{type:mimeType});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
-  showToast('Exported '+memoriesToExport.length+' memories');
-}
-document.getElementById('exportBtn').addEventListener('click',(e)=>{e.stopPropagation();document.getElementById('exportMenu').classList.toggle('open');});
-document.addEventListener('click',()=>document.getElementById('exportMenu').classList.remove('open'));
-
-// Undo stack
-function pushUndo(action){undoStack.push(action);if(undoStack.length>10)undoStack.shift();document.getElementById('undoBtn').disabled=false;}
-function performUndo(){
-  if(undoStack.length===0)return;
-  const action=undoStack.pop();
-  if(action.type==='delete'){
-    const memories=JSON.parse(localStorage.getItem('cognexia_memories_'+action.project)||'[]');memories.push(action.memory);localStorage.setItem('cognexia_memories_'+action.project,JSON.stringify(memories));showToast('Memory restored');
-  } else if(action.type==='edit'){
-    api('/memory/'+action.id,{method:'PATCH',body:JSON.stringify({content:action.oldContent})}).then(()=>{showToast('Edit undone');loadView();}).catch(err=>showToast(err.message,'error'));return;
-  }
-  document.getElementById('undoBtn').disabled=undoStack.length===0;
-  loadView();loadProjects();
-}
-document.getElementById('undoBtn').addEventListener('click',performUndo);
-document.addEventListener('keydown',(e)=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();performUndo()}});
-
-// Toast notifications
-function showToast(message,type='success'){const toast=document.createElement('div');toast.className='toast '+type;toast.innerHTML='<span>'+(type==='success'?'✓':type==='error'?'✗':'ℹ')+'</span><span>'+message+'</span>';toastContainer.appendChild(toast);setTimeout(()=>{toast.style.opacity='0';toast.style.transform='translateY(20px)';setTimeout(()=>toast.remove(),300)},2500);}
-
-// API helper
-async function api(endpoint,options={}){const res=await fetch('/api'+endpoint,{headers:{'Content-Type':'application/json'},...options});const json=await res.json();if(!json.success)throw new Error(json.error);return json.data;}
-
-// Utility functions
-function getImportanceClass(importance){if(importance>=8)return'importance-high';if(importance>=5)return'importance-medium';return'importance-low'}
-function formatDate(dateStr){const date=new Date(dateStr),now=new Date(),diff=now-date;if(diff<86400000)return'Today';if(diff<172800000)return'Yesterday';return date.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}
-function formatTime(dateStr){return new Date(dateStr).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
-function escapeHtml(text){const div=document.createElement('div');div.textContent=text;return div.innerHTML}
-
-// Load projects
-async function loadProjects(){try{const data=await api('/projects');projects=data.projects||[];if(!projects.includes('general'))projects.unshift('general');renderProjectList();renderProjectSelect();updateProjectMemoryCounts();}catch(err){projects=['general'];renderProjectList();}}
-function getProjectMemoryCount(project){try{const memories=JSON.parse(localStorage.getItem('cognexia_memories_'+project)||'[]');return memories.length;}catch(e){return 0;}}
-function updateProjectMemoryCounts(){document.querySelectorAll('.project-item').forEach(item=>{const proj=item.dataset.project;let countEl=item.querySelector('.project-count');if(!countEl){countEl=document.createElement('span');countEl.className='project-count';item.appendChild(countEl);}const count=getProjectMemoryCount(proj);countEl.textContent=count>0?count:'';});}
-
-function renderProjectList(){projectList.innerHTML=projects.map(p=>{const count=getProjectMemoryCount(p);return'<div class="project-item '+(p===currentProject?'active':'')+'" data-project="'+p+'"><div class="project-icon">📁</div><span class="project-name">'+p+'</span>'+(count>0?'<span class="project-count">'+count+'</span>':'')+'</div>';}).join('');projectList.querySelectorAll('.project-item').forEach(item=>item.addEventListener('click',()=>{currentProject=item.dataset.project;filterTag=null;renderProjectList();loadView();}));}
-function renderProjectSelect(){memoryProjectSelect.innerHTML=projects.map(p=>'<option value="'+p+'" '+(p===currentProject?'selected':'')+'>'+p+'</option>').join('')}
-function extractTags(content){const matches=content.match(/#[\w]+/g)||[];return[...new Set(matches)]}
-function updateAllTags(){const tags=new Set();allMemories.forEach(m=>{if(m.tags)m.tags.forEach(t=>tags.add(t));else extractTags(m.content).forEach(t=>tags.add(t));});allTags=Array.from(tags).sort()}
-
-// Memory card rendering
-function renderMemoryCard(memory){
-  const impClass=getImportanceClass(memory.importance),isSelected=selectedMemories.has(memory.id),needsExpand=memory.content.length>200,tags=memory.tags||extractTags(memory.content),isPublished=memory.published===1||memory.published===true;
-  const previewContent=escapeHtml(memory.content)+(tags.length?'\n\nTags: '+tags.map(t=>escapeHtml(t)).join(', '):'')+'\n\nType: '+memory.content_type+' | Importance: '+memory.importance+'/10'+(isPublished?' | Published':'');
-  return'<div class="memory-card'+(isSelected?' selected':'')+(memory.pinned?' pinned':'')+(isPublished?' published':'')+'" data-id="'+memory.id+'" data-kb-nav="true"><div class="memory-preview"><h4>Full Preview</h4><p>'+previewContent.replace(/\n/g,'<br>')+'</p><div class="preview-meta"><span>'+memory.content_type+'</span><span>Importance: '+memory.importance+'/10</span><span>'+formatDate(memory.created_at)+'</span>'+(isPublished?'<span style="color:var(--accent)">🌐 Published</span>':'')+'</div></div><div class="memory-card-header"><div class="memory-meta"><div class="memory-checkbox'+(isSelected?' checked':'')+'" onclick="toggleMemorySelection(\''+memory.id+'\',event)"></div><span class="memory-type">'+memory.content_type+'</span><span class="memory-importance '+impClass+'">'+memory.importance+'/10</span>'+(isPublished?'<span class="published-badge" title="Published at /p/'+memory.id+'" style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(102,126,234,0.15);color:var(--accent)">🌐</span>':'')+'</div><div style="display:flex;align-items:center;gap:8px"><button class="pin-btn'+(memory.pinned?' pinned':'')+'" onclick="togglePin(\''+memory.id+'\')" title="'+(memory.pinned?'Unpin':'Pin')+'">★</button><span class="memory-time">'+formatTime(memory.created_at)+'</span></div></div><div class="memory-content'+(memory.expanded?' expanded':'')+'">'+escapeHtml(memory.content)+'</div>'+(tags.length?'<div class="memory-tags">'+tags.map(t=>'<span class="memory-tag" onclick="filterByTag(\''+t.slice(1)+'\')">'+escapeHtml(t)+'</span>').join('')+'</div>':'')+(needsExpand?'<button class="expand-btn" onclick="toggleExpand(this)">Show more</button>':'')+'<div class="memory-actions"><button class="action-btn" onclick="openEditModal(\''+memory.id+'\')">✏️ Edit</button><button class="action-btn md" onclick="openMarkdownEditor(\''+memory.id+'\')">📝 Markdown</button><button class="action-btn'+(isPublished?' published-btn':'')+'" onclick="togglePublish(\''+memory.id+'\')">'+(isPublished?'🔒 Unpublish':'🌐 Publish')+'</button><button class="action-btn" onclick="showBacklinks(\''+memory.id+'\')">📎 Backlinks</button><button class="action-btn copy" onclick="copyMemory(\''+memory.id+'\')">📋 Copy</button><button class="action-btn delete" onclick="confirmDeleteMemory(\''+memory.id+'\')">🗑️ Delete</button></div>'+(isPublished?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.75rem"><a href="/p/'+memory.id+'" target="_blank" style="color:var(--accent)">🌐 View published: /p/'+memory.id+'</a></div>':'')+'</div>';
-}
-
-// Memory interactions
-function toggleExpand(btn){const content=btn.previousElementSibling.previousElementSibling;content.classList.toggle('expanded');btn.textContent=content.classList.contains('expanded')?'Show less':'Show more'}
-function toggleMemorySelection(id,e){e.stopPropagation();if(selectedMemories.has(id))selectedMemories.delete(id);else selectedMemories.add(id);updateBulkActions();loadView()}
-function togglePin(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;api('/memory/'+id+'?project='+currentProject,{method:'PATCH',body:JSON.stringify({pinned:!memory.pinned})}).then(()=>{memory.pinned=!memory.pinned;loadView()}).catch(err=>showToast(err.message,'error'))}
-function togglePublish(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;const newPublished=!(memory.published===1||memory.published===true);api('/memory/'+id+'?project='+currentProject,{method:'PATCH',body:JSON.stringify({published:newPublished})}).then(()=>{memory.published=newPublished;showToast(newPublished?'Memory published!':'Memory unpublished');loadView()}).catch(err=>showToast(err.message,'error'))}
-async function copyMemory(id){const memory=allMemories.find(m=>m.id===id);if(memory){await navigator.clipboard.writeText(memory.content);showToast('Copied!')}}
-function filterByTag(tag){filterTag=tag;loadView()}
-function clearTagFilter(){filterTag=null;loadView()}
-function updateBulkActions(){const bulkActions=document.getElementById('bulkActions'),bulkCount=document.getElementById('bulkCount'),mergeBtn=document.getElementById('mergeBtn');if(bulkActions){if(selectedMemories.size>0){bulkActions.classList.add('visible');bulkCount.textContent=selectedMemories.size+' selected';mergeBtn.disabled=selectedMemories.size<2}else{bulkActions.classList.remove('visible')}}}}
-function clearSelection(){selectedMemories.clear();updateBulkActions();loadView()}
-async function deleteSelected(){if(selectedMemories.size===0)return;showConfirmModal('Delete '+selectedMemories.size+' memories?','This action cannot be undone.',async()=>{try{await api('/memory/bulk-delete',{method:'POST',body:JSON.stringify({ids:Array.from(selectedMemories),project:currentProject})});showToast('Deleted '+selectedMemories.size+' memories');selectedMemories.clear();updateBulkActions();loadView();loadProjects();}catch(err){showToast(err.message,'error')}});}
-async function mergeSelected(){if(selectedMemories.size<2){showToast('Select at least 2 memories to merge','error');return}showConfirmModal('Merge '+selectedMemories.size+' memories?','Contents will be combined into one memory.',async()=>{try{await api('/memory/merge',{method:'POST',body:JSON.stringify({ids:Array.from(selectedMemories),project:currentProject})});showToast('Merged into new memory');selectedMemories.clear();updateBulkActions();loadView();}catch(err){showToast(err.message,'error')}});}
-function showConfirmModal(message,submessage,callback){document.getElementById('confirmMessage').textContent=message;document.getElementById('confirmSubmessage').textContent=submessage;confirmCallback=callback;confirmModal.classList.add('active')}
-function hideConfirmModal(){confirmModal.classList.remove('active');confirmCallback=null}
-async function confirmDeleteMemory(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;showConfirmModal('Delete this memory?','This action cannot be undone.',async()=>{pushUndo({type:'delete',memory:memory,project:currentProject});try{await api('/memory/'+id+'?project='+currentProject,{method:'DELETE'});showToast('Memory deleted');loadView();loadProjects();}catch(err){showToast(err.message,'error')}});}
-function openMemoryModal(){document.getElementById('memoryModalTitle').textContent='Add New Memory';document.getElementById('editMemoryId').value='';document.getElementById('memoryContent').value='';document.getElementById('memoryType').value='insight';importanceSlider.value=5;importanceValue.textContent='5';document.getElementById('memoryPublished').checked=false;renderProjectSelect();document.getElementById('autosaveStatus').textContent='';memoryModal.classList.add('active');document.getElementById('memoryContent').focus();}
-function openEditModal(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;document.getElementById('memoryModalTitle').textContent='Edit Memory';document.getElementById('editMemoryId').value=id;document.getElementById('memoryContent').value=memory.content;document.getElementById('memoryType').value=memory.content_type;importanceSlider.value=memory.importance;importanceValue.textContent=memory.importance;memoryProjectSelect.value=memory.project||currentProject;document.getElementById('memoryPublished').checked=memory.published===1||memory.published===true;document.getElementById('autosaveStatus').textContent='';memoryModal.classList.add('active');}
-function closeMemoryModal(){memoryModal.classList.remove('active');clearAutosave()}
-
-// Auto-save with debounce
-function clearAutosave(){if(autosaveTimer){clearTimeout(autosaveTimer);autosaveTimer=null}}
-function triggerAutosave(){clearAutosave();const editId=document.getElementById('editMemoryId').value;const content=document.getElementById('memoryContent').value.trim();if(!editId||!content)return;document.getElementById('autosaveStatus').textContent='Saving...';document.getElementById('autosaveStatus').style.color='var(--yellow)';autosaveTimer=setTimeout(async()=>{try{const data={content:content,type:document.getElementById('memoryType').value,project:memoryProjectSelect.value,importance:parseInt(importanceSlider.value),published:document.getElementById('memoryPublished').checked};await api('/memory/'+editId,{method:'PATCH',body:JSON.stringify(data)});document.getElementById('autosaveStatus').textContent='Saved ✓';document.getElementById('autosaveStatus').style.color='var(--green)';}catch(err){document.getElementById('autosaveStatus').textContent='Save failed';document.getElementById('autosaveStatus').style.color='var(--red)';}},2000);}
-document.getElementById('memoryContent').addEventListener('input',()=>{const editId=document.getElementById('editMemoryId').value;if(editId)triggerAutosave();});
-
-async function saveMemory(){const editId=document.getElementById('editMemoryId').value,memContent=document.getElementById('memoryContent').value.trim();if(!memContent)return;clearAutosave();const data={content:memContent,type:document.getElementById('memoryType').value,project:memoryProjectSelect.value,importance:parseInt(importanceSlider.value),published:document.getElementById('memoryPublished').checked};try{if(editId){pushUndo({type:'edit',id:editId,oldContent:allMemories.find(m=>m.id===editId)?.content});await api('/memory/'+editId,{method:'PATCH',body:JSON.stringify(data)});showToast('Memory updated');}else{await api('/memory/store',{method:'POST',body:JSON.stringify(data)});showToast('Memory saved');}closeMemoryModal();loadView();loadProjects();}catch(err){showToast(err.message,'error')}}
-
-async function performSearch(query){if(!query.trim()){searchResults.classList.remove('active');return}saveRecentSearch(query);try{const data=await api('/memory/query?q='+encodeURIComponent(query)+'&project='+encodeURIComponent(currentProject)+'&limit=10'),results=data.results||[];if(results.length===0)searchResults.innerHTML='<div class="search-result-item">No results found</div>';else{searchResults.innerHTML=results.map(r=>'<div class="search-result-item" data-id="'+r.id+'"><div class="search-result-content">'+escapeHtml(r.content.substring(0,150))+'</div><div class="search-result-meta">'+r.content_type+'</div></div>').join('')}searchResults.classList.add('active');}catch(err){console.error('Search failed:',err)}}
-function getRecentSearches(){try{return JSON.parse(localStorage.getItem('cognexia_recent_searches')||'[]');}catch(e){return [];}}
-function saveRecentSearch(query){if(!query.trim())return;let searches=getRecentSearches();searches=searches.filter(s=>s!==query);searches.unshift(query);searches=searches.slice(0,10);localStorage.setItem('cognexia_recent_searches',JSON.stringify(searches));}
-function renderRecentSearches(){const searches=getRecentSearches();const el=document.getElementById('recentSearches');if(searches.length===0){el.classList.remove('active');return;}el.innerHTML='<div class="recent-search-header">Recent Searches</div>'+searches.map(s=>'<div class="recent-search-item" data-query="'+escapeHtml(s)+'"><span class="query">'+escapeHtml(s)+'</span><button class="remove-search" onclick="event.stopPropagation();removeRecentSearch(\'\''+escapeHtml(s).replace(/'/g,"\\'")+'\'\')">×</button></div>').join('')+'<div class="recent-search-item" onclick="clearAllRecentSearches()" style="color:var(--text-muted);font-size:0.8rem;text-align:center;border-bottom:none">Clear all</div>';el.classList.add('active');}
-function removeRecentSearch(query){let searches=getRecentSearches();searches=searches.filter(s=>s!==query);localStorage.setItem('cognexia_recent_searches',JSON.stringify(searches));renderRecentSearches();}
-function clearAllRecentSearches(){localStorage.setItem('cognexia_recent_searches','[]');document.getElementById('recentSearches').classList.remove('active');}
-async function showBacklinks(id){const memory=allMemories.find(m=>m.id===id);if(!memory)return;try{const data=await api('/memory/'+id+'/backlinks?project='+currentProject),backlinks=data.backlinks||[];const list=document.getElementById('backlinksList');if(backlinks.length===0){list.innerHTML='<div class="no-backlinks">No backlinks found</div>'}else{list.innerHTML=backlinks.map(b=>'<div class="backlink-item" onclick="openEditModal(\''+b.id+'\')"><div class="backlink-preview">'+escapeHtml(b.content)+'</div><div class="backlink-meta"><span class="backlink-score">'+b.relevanceScore+' shared keywords</span><span>'+b.content_type+'</span></div></div>').join('')}}catch(err){showToast(err.message,'error')}backlinksPanel.classList.add('open');}
-function closeBacklinks(){backlinksPanel.classList.remove('open')}
-function onFilterTypeChange(val){filterType=val;loadView()}
-function onFilterImportanceChange(val){filterImportance=val;loadView()}
-function onSortChange(val){sortOrder=val;loadView()}
-async function loadView(){if(currentView==='graph'){loadGraphView()}else{loadTimeline()}}
-
-function filterAndSortMemories(memories){
-  let filtered=[...memories];
-  if(filterTag)filtered=filtered.filter(m=>{const memTags=m.tags||extractTags(m.content);return memTags.some(t=>t.toLowerCase()===filterTag.toLowerCase())});
-  if(filterType!=='all')filtered=filtered.filter(m=>m.content_type===filterType);
-  if(filterImportance==='high')filtered=filtered.filter(m=>m.importance>=8);
-  else if(filterImportance==='medium')filtered=filtered.filter(m=>m.importance>=5&&m.importance<8);
-  else if(filterImportance==='low')filtered=filtered.filter(m=>m.importance<5);
-  else if(filterImportance==='pinned')filtered=filtered.filter(m=>m.pinned);
-  const pinned=[],unpinned=[];filtered.forEach(m=>m.pinned?pinned.push(m):unpinned.push(m));
-  if(sortOrder==='newest')unpinned.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  else if(sortOrder==='oldest')unpinned.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  else if(sortOrder==='importance')unpinned.sort((a,b)=>b.importance-a.importance);
-  pinned.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  return[...pinned,...unpinned];
-}
-
-// Command Palette
-let commandItems=[],selectedCmdIndex=0;
-const COMMANDS=[
-  {label:'New Memory',icon:'➕',action:()=>openMemoryModal(),shortcut:'N'},
-  {label:'Toggle Theme',icon:'🌙',action:()=>document.getElementById('themeToggle').click(),shortcut:'T'},
-  {label:'Switch to Graph View',icon:'🕸️',action:()=>switchView('graph'),shortcut:'G'},
-  {label:'Switch to Timeline',icon:'📅',action:()=>switchView('timeline'),section:'views'},
-  {label:'Export All (JSON)',icon:'📦',action:()=>exportMemories('json','all')},
-  {label:'Export Current (JSON)',icon:'📄',action:()=>exportMemories('json','current')},
-  {label:'Export All (Markdown)',icon:'📋',action:()=>exportMemories('markdown','all')},
-  {label:'Open Settings',icon:'⚙️',action:()=>{document.getElementById('settingsModal').classList.add('active');updateStorageDisplay();},shortcut:'Ctrl+,'},
-  {label:'Clear All Data',icon:'🗑️',action:()=>clearAllData(),section:'danger'},
-  {label:'New Memory from Template',icon:'📋',action:()=>openTemplateModal()},
-];
-function openCommandPalette(){
-  commandItems=COMMANDS.filter(c=>!c.section||c.section!=='danger');
-  selectedCmdIndex=0;
-  document.getElementById('commandInput').value='';
-  renderCommandResults('');
-  document.getElementById('commandPalette').classList.add('active');
-  document.getElementById('commandInput').focus();
-}
-function closeCommandPalette(){
-  document.getElementById('commandPalette').classList.remove('active');
-}
-function renderCommandResults(query){
-  const results=document.getElementById('commandResults');
-  const filtered=commandItems.filter(c=>c.label.toLowerCase().includes(query.toLowerCase()));
-  if(filtered.length===0){results.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted)">No commands found</div>';return;}
-  let html='';
-  const sections={};
-  filtered.forEach((c,i)=>{
-    const section=c.section||'general';
-    if(!sections[section])sections[section]=[];
-    sections[section].push({...c,filteredIndex:i});
-  });
-  Object.keys(sections).forEach(section=>{
-    html+='<div class="command-palette-section"><div class="command-palette-section-title">'+section+'</div>';
-    sections[section].forEach(c=>{
-      const isSelected=c.filteredIndex===selectedCmdIndex;
-      html+='<div class="command-item'+(isSelected?' selected':'')+'" data-index="'+c.filteredIndex+'" onclick="executeCommand('+c.filteredIndex+')">';
-      html+='<span class="cmd-icon">'+c.icon+'</span>';
-      html+='<span class="cmd-label">'+c.label+'</span>';
-      if(c.shortcut)html+='<span class="cmd-shortcut">'+c.shortcut+'</span>';
-      html+='</div>';
-    });
-    html+='</div>';
-  });
-  results.innerHTML=html;
-}
-function executeCommand(index){
-  const cmd=commandItems.find((c,i)=>i===index);
-  if(cmd){closeCommandPalette();cmd.action();}
-}
-
-document.getElementById('commandInput').addEventListener('input',(e)=>{selectedCmdIndex=0;renderCommandResults(e.target.value);});
-document.getElementById('commandInput').addEventListener('keydown',(e)=>{
-  if(e.key==='ArrowDown'){e.preventDefault();selectedCmdIndex=Math.min(selectedCmdIndex+1,commandItems.length-1);renderCommandResults(document.getElementById('commandInput').value);}
-  else if(e.key==='ArrowUp'){e.preventDefault();selectedCmdIndex=Math.max(selectedCmdIndex-1,0);renderCommandResults(document.getElementById('commandInput').value);}
-  else if(e.key==='Enter'){e.preventDefault();executeCommand(selectedCmdIndex);}
-  else if(e.key==='Escape'){closeCommandPalette();}
-});
-document.getElementById('commandPalette').addEventListener('click',(e)=>{if(e.target===document.getElementById('commandPalette'))closeCommandPalette();});
-
-// Open in new tab
-function openMemoryInTab(id){
-  const memory=allMemories.find(m=>m.id===id);
-  if(!memory)return;
-  const url='/memory/'+id+'?project='+encodeURIComponent(currentProject);
-  window.open(url,'_blank');
-}
-
-async function loadTimeline(){
-  content.innerHTML='<div class="loading"><div class="spinner"></div></div>';
-  loadDailyDigest();
-  try{
-    const data=await api('/memory/all?project='+encodeURIComponent(currentProject)+'&days=30'),memories=data.memories||[];
-    allMemories=memories;updateAllTags();updateStorageDisplay();
-    const filtered=filterAndSortMemories(allMemories);
-    if(filtered.length===0){content.innerHTML='<div class="empty-state"><div class="empty-state-icon">🧠</div><h3>'+(filterType!=='all'||filterImportance!=='all'||filterTag?'No matching memories':'No memories yet')+'</h3><p>'+(filterType!=='all'||filterImportance!=='all'||filterTag?'Try adjusting your filters.':'Start building your knowledge base.')+'</p></div>';return;}
-    let html='<div class="view-header"><h2>Timeline</h2><p>'+filtered.length+' '+(filtered.length===1?'memory':'memories')+'</p></div><div class="stats-bar"><div class="stat"><span class="stat-value">'+filtered.length+'</span><span class="stat-label">Memories</span></div></div>';
-    let tagHtml='';
-    if(allTags.length>0){tagHtml='<div class="filter-group"><span class="filter-label">Tags:</span><div class="tag-filter">';if(filterTag)tagHtml+='<span class="tag-badge active" onclick="clearTagFilter()">'+filterTag+' <span class="remove">×</span></span>';allTags.filter(t=>t.toLowerCase()!==filterTag).slice(0,8).forEach(t=>{tagHtml+='<span class="tag-badge" onclick="filterByTag(\''+t.slice(1)+'\')">'+t+'</span>'});tagHtml+='</div></div>';}
-    html+='<div class="filter-bar"><div class="filter-group"><span class="filter-label">Type:</span><select class="filter-select" id="filterType" onchange="onFilterTypeChange(this.value)"><option value="all" '+(filterType==='all'?'selected':'')+'>All</option><option value="insight" '+(filterType==='insight'?'selected':'')+'>Insight</option><option value="preference" '+(filterType==='preference'?'selected':'')+'>Preference</option><option value="error" '+(filterType==='error'?'selected':'')+'>Error</option><option value="goal" '+(filterType==='goal'?'selected':'')+'>Goal</option><option value="milestone" '+(filterType==='milestone'?'selected':'')+'>Milestone</option><option value="security" '+(filterType==='security'?'selected':'')+'>Security</option></select></div><div class="filter-group"><span class="filter-label">Importance:</span><select class="filter-select" id="filterImportance" onchange="onFilterImportanceChange(this.value)"><option value="all" '+(filterImportance==='all'?'selected':'')+'>All</option><option value="high" '+(filterImportance==='high'?'selected':'')+'>High (8-10)</option><option value="medium" '+(filterImportance==='medium'?'selected':'')+'>Medium (5-7)</option><option value="low" '+(filterImportance==='low'?'selected':'')+'>Low (1-4)</option><option value="pinned" '+(filterImportance==='pinned'?'selected':'')+'>★ Pinned</option></select></div><div class="filter-group"><span class="filter-label">Sort:</span><select class="filter-select" id="sortOrder" onchange="onSortChange(this.value)"><option value="newest" '+(sortOrder==='newest'?'selected':'')+'>Newest first</option><option value="oldest" '+(sortOrder==='oldest'?'selected':'')+'>Oldest first</option><option value="importance" '+(sortOrder==='importance'?'selected':'')+'>Highest importance</option></select></div>'+tagHtml+'</div>';
-    html+='<div class="bulk-actions" id="bulkActions"><span class="bulk-count" id="bulkCount">0 selected</span><button class="btn bulk-merge-btn" id="mergeBtn" onclick="mergeSelected()" disabled>Merge Selected</button><button class="btn btn-danger" onclick="deleteSelected()">Delete Selected</button><button class="btn" onclick="clearSelection()">Clear</button></div><div class="timeline">';
-    const grouped={};filtered.forEach(m=>{const date=m.created_at.split('T')[0];if(!grouped[date])grouped[date]=[];grouped[date].push(m);});
-    Object.keys(grouped).sort((a,b)=>new Date(b)-new Date(a)).forEach(date=>{const memories=grouped[date];html+='<div class="timeline-date"><div class="timeline-date-header"><span class="date">'+formatDate(date)+'</span><span>'+memories.length+' '+(memories.length===1?'memory':'memories')+'</span></div><div class="memory-grid">';memories.forEach(memory=>html+=renderMemoryCard(memory));html+='</div></div>';});
-    html+='</div>';content.innerHTML=html;updateBulkActions();
-  }catch(err){content.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Failed to load</h3><p>'+err.message+'</p></div>';}
-}
-
-// Graph
-let graphCanvas,graphCtx,graphNodes=[],graphEdges=[],graphSimulation=null,graphDraggedNode=null,graphScale=1,graphOffset={x:0,y:0};
-function getTypeColor(type){const colors={insight:'#667eea',preference:'#f39c12',error:'#e74c3c',goal:'#27ae60',milestone:'#9b59b6',security:'#e67e22'};return colors[type]||'#888'}
-function initGraph(){graphCanvas=document.getElementById('graphCanvas');if(!graphCanvas)return;graphCtx=graphCanvas.getContext('2d');resizeGraphCanvas();window.addEventListener('resize',resizeGraphCanvas);graphCanvas.addEventListener('mousedown',graphOnMouseDown);graphCanvas.addEventListener('mousemove',graphOnMouseMove);graphCanvas.addEventListener('mouseup',graphOnMouseUp);graphCanvas.addEventListener('wheel',graphOnWheel);graphCanvas.addEventListener('click',graphOnClick);}
-function resizeGraphCanvas(){if(!graphCanvas)return;const rect=graphCanvas.parentElement.getBoundingClientRect();graphCanvas.width=rect.width;graphCanvas.height=rect.height;}
-async function loadGraphView(){try{const data=await api('/memory/all?project='+encodeURIComponent(currentProject)+'&days=30'),memories=data.memories||[];allMemories=memories;updateAllTags();content.innerHTML='<div class="view-header"><h2>Graph View</h2><p>'+memories.length+' memories</p></div><div class="graph-container"><canvas id="graphCanvas"></canvas><div class="graph-tooltip" id="graphTooltip"><h4></h4><p></p></div><div class="graph-legend"><div class="legend-item"><div class="legend-dot" style="background:#667eea"></div><span>Insight</span></div><div class="legend-item"><div class="legend-dot" style="background:#f39c12"></div><span>Preference</span></div><div class="legend-item"><div class="legend-dot" style="background:#e74c3c"></div><span>Error</span></div><div class="legend-item"><div class="legend-dot" style="background:#27ae60"></div><span>Goal</span></div></div><div class="graph-controls"><button class="btn" onclick="graphZoomIn()">+</button><button class="btn" onclick="graphZoomOut()">-</button><button class="btn" onclick="graphReset()">Reset</button></div></div>';initGraph();buildGraph(memories);}catch(err){content.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Failed to load graph</h3><p>'+err.message+'</p></div>';}}
-function buildGraph(memories){graphNodes=memories.map((m,i)=>{const angle=i*2*Math.PI/Math.max(memories.length,1);const radius=150;return{id:m.id,content:m.content,type:m.content_type,importance:m.importance,x:graphCanvas.width/2+Math.cos(angle)*radius,y:graphCanvas.height/2+Math.sin(angle)*radius,vx:0,vy:0};});graphEdges=[];const threshold=3;for(let i=0;i<graphNodes.length;i++){for(let j=i+1;j<graphNodes.length;j++){const shared=countSharedWords(graphNodes[i].content,graphNodes[j].content);if(shared>=threshold){graphEdges.push({source:i,target:j,strength:shared/threshold})}}}if(graphSimulation)clearInterval(graphSimulation);graphSimulation=setInterval(simulateGraph,1000/60);renderGraph();}
-function countSharedWords(a,b){const wordsA=new Set(a.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>3));const wordsB=new Set(b.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>3));let shared=0;wordsA.forEach(w=>{if(wordsB.has(w))shared++});return shared;}
-function simulateGraph(){const repulsion=5000,centering=0.01,damping=0.9;for(let i=0;i<graphNodes.length;i++){const node=graphNodes[i];node.edges=0;graphEdges.forEach(e=>{if(e.source===i||e.target===i)node.edges++})}for(let i=0;i<graphNodes.length;i++){const node=graphNodes[i];let fx=0,fy=0;for(let j=0;j<graphNodes.length;j++){if(i===j)continue;const dx=node.x-graphNodes[j].x,dy=node.y-graphNodes[j].y,dist=Math.sqrt(dx*dx+dy*dy)||1;const force=(repulsion/dist)*0.1;fx+=dx/dist*force;fy+=dy/dist*force;}graphEdges.forEach(e=>{if(e.source===i){fx+=(graphNodes[e.target].x-node.x)*0.01*e.strength;fy+=(graphNodes[e.target].y-node.y)*0.01*e.strength;}else if(e.target===i){fx+=(graphNodes[e.source].x-node.x)*0.01*e.strength;fy+=(graphNodes[e.source].y-node.y)*0.01*e.strength;}});fx+=(graphCanvas.width/2-node.x)*centering;fy+=(graphCanvas.height/2-node.y)*centering;node.vx=(node.vx+fx)*damping;node.vy=(node.vy+fy)*damping;node.x+=node.vx;node.y+=node.vy;node.x=Math.max(50,Math.min(graphCanvas.width-50,node.x));node.y=Math.max(50,Math.min(graphCanvas.height-50,node.y));}renderGraph();}
-function renderGraph(){if(!graphCtx)return;graphCtx.clearRect(0,0,graphCanvas.width,graphCanvas.height);graphCtx.save();graphCtx.translate(graphOffset.x,graphOffset.y);graphCtx.scale(graphScale,graphScale);graphEdges.forEach(e=>{const s=graphNodes[e.source],t=graphNodes[e.target];graphCtx.beginPath();graphCtx.moveTo(s.x,s.y);graphCtx.lineTo(t.x,t.y);graphCtx.strokeStyle='rgba(102,126,234,0.3)';graphCtx.lineWidth=e.strength*0.5;graphCtx.stroke();});graphNodes.forEach((n,i)=>{const size=8+n.importance;graphCtx.beginPath();graphCtx.arc(n.x,n.y,size,0,2*Math.PI);graphCtx.fillStyle=getTypeColor(n.type);graphCtx.fill();graphCtx.strokeStyle='rgba(255,255,255,0.2)';graphCtx.lineWidth=1;graphCtx.stroke();});graphCtx.restore();}
-function graphOnMouseDown(e){const rect=graphCanvas.getBoundingClientRect();const x=(e.clientX-rect.left-graphOffset.x)/graphScale;const y=(e.clientY-rect.top-graphOffset.y)/graphScale;graphNodes.forEach(n=>{const dx=n.x-x,dy=n.y-y;if(Math.sqrt(dx*dx+dy*dy)<15+n.importance){graphDraggedNode=n;graphDraggedNode.startX=e.clientX;graphDraggedNode.startY=e.clientY;}});}
-function graphOnMouseMove(e){if(graphDraggedNode){graphDraggedNode.x+=(e.clientX-graphDraggedNode.startX)/graphScale;graphDraggedNode.y+=(e.clientY-graphDraggedNode.startY)/graphScale;graphDraggedNode.startX=e.clientX;graphDraggedNode.startY=e.clientY;renderGraph();}}
-function graphOnMouseUp(){graphDraggedNode=null;}
-function graphOnWheel(e){e.preventDefault();const delta=e.deltaY>0?0.9:1.1;graphScale=Math.max(0.3,Math.min(3,graphScale*delta));renderGraph();}
-function graphOnClick(e){const rect=graphCanvas.getBoundingClientRect();const x=(e.clientX-rect.left-graphOffset.x)/graphScale;const y=(e.clientY-rect.top-graphOffset.y)/graphScale;let found=null;graphNodes.forEach(n=>{const dx=n.x-x,dy=n.y-y;if(Math.sqrt(dx*dx+dy*dy)<15+n.importance)found=n;});if(found){const tooltip=document.getElementById('graphTooltip');tooltip.querySelector('h4').textContent=found.type;tooltip.querySelector('p').textContent=found.content.substring(0,100)+(found.content.length>100?'...':'');tooltip.style.display='block';tooltip.style.left=(e.clientX-rect.left+10)+'px';tooltip.style.top=(e.clientY-rect.top+10)+'px';setTimeout(()=>tooltip.style.display='none',3000);}else document.getElementById('graphTooltip').style.display='none';}
-function graphZoomIn(){graphScale=Math.min(3,graphScale*1.2);renderGraph();}
-function graphZoomOut(){graphScale=Math.max(0.3,graphScale/1.2);renderGraph();}
-function graphReset(){graphScale=1;graphOffset={x:0,y:0};renderGraph();}
-function switchView(view){currentView=view;document.getElementById('timelineViewBtn').classList.toggle('active',view==='timeline');document.getElementById('graphViewBtn').classList.toggle('active',view==='graph');loadView();}
-
-// Event Listeners
-document.getElementById('newMemoryBtn').addEventListener('click',openMemoryModal);
-document.getElementById('closeModal').addEventListener('click',closeMemoryModal);
-document.getElementById('cancelMemory').addEventListener('click',closeMemoryModal);
-document.getElementById('saveMemory').addEventListener('click',saveMemory);
-memoryModal.addEventListener('click',e=>{if(e.target===memoryModal)closeMemoryModal()});
-document.getElementById('closeConfirm').addEventListener('click',hideConfirmModal);
-document.getElementById('cancelConfirm').addEventListener('click',hideConfirmModal);
-document.getElementById('confirmAction').addEventListener('click',()=>{if(confirmCallback)confirmCallback();hideConfirmModal()});
-confirmModal.addEventListener('click',e=>{if(e.target===confirmModal)hideConfirmModal()});
-document.getElementById('closeBacklinks').addEventListener('click',closeBacklinks);
-importanceSlider.addEventListener('input',()=>{importanceValue.textContent=importanceSlider.value});
-searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>performSearch(searchInput.value),300)});
-searchInput.addEventListener('focus',()=>{renderRecentSearches();if(searchInput.value.trim())searchResults.classList.add('active');});
-document.addEventListener('click',e=>{if(!e.target.closest('.search-container')){searchResults.classList.remove('active');document.getElementById('recentSearches').classList.remove('active');}if(e.target.closest('.recent-search-item')&&!e.target.closest('.remove-search')){const query=e.target.closest('.recent-search-item').dataset.query;if(query){searchInput.value=query;performSearch(query);document.getElementById('recentSearches').classList.remove('active');}}});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==searchInput&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();searchInput.focus()}else if(e.key==='n'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();openMemoryModal()}else if(e.key==='g'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('graph')}else if(e.key==='t'&&document.activeElement.tagName!=='TEXTAREA'&&document.activeElement.tagName!=='INPUT'){switchView('timeline')}else if(e.key==='Escape'){closeMemoryModal();closeMarkdownModal();hideConfirmModal();searchResults.classList.remove('active');closeBacklinks();document.getElementById('settingsModal').classList.remove('active');closeCommandPalette();}
-  // Keyboard navigation
-  else if(currentView==='timeline'&&e.key==='ArrowDown'&&!isInputFocused()){
-    e.preventDefault();navigateMemories(1);
-  }else if(currentView==='timeline'&&e.key==='ArrowUp'&&!isInputFocused()){
-    e.preventDefault();navigateMemories(-1);
-  }else if(currentView==='timeline'&&e.key==='Enter'&&!isInputFocused()&&kbNavIndex>=0){
-    e.preventDefault();const card=document.querySelector('[data-kb-nav]');if(card){const id=card.dataset.id;if(id)openEditModal(id);}
-  }else if(currentView==='timeline'&&e.key==='e'&&!isInputFocused()&&kbNavIndex>=0){
-    e.preventDefault();const cards=document.querySelectorAll('[data-kb-nav]');if(cards[kbNavIndex]){const id=cards[kbNavIndex].dataset.id;if(id)openEditModal(id);}
-  }
-document.getElementById('timelineViewBtn').addEventListener('click',()=>switchView('timeline'));
-document.getElementById('graphViewBtn').addEventListener('click',()=>switchView('graph'));
-
-// Init
-loadPreferences();
-loadProjects().then(()=>{loadView();});
-
-// Keyboard navigation helpers
-function isInputFocused(){const tag=document.activeElement.tagName;return tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';}
-function navigateMemories(direction){
-  const cards=Array.from(document.querySelectorAll('.memory-card[data-kb-nav]'));
-  if(cards.length===0)return;
-  if(kbNavIndex>=0)cards[kbNavIndex]?.classList.remove('keyboard-nav');
-  kbNavIndex+=direction;
-  if(kbNavIndex<0)kbNavIndex=cards.length-1;
-  if(kbNavIndex>=cards.length)kbNavIndex=0;
-  cards[kbNavIndex]?.classList.add('keyboard-nav');
-  cards[kbNavIndex]?.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-// Templates
-function getTemplates(){try{return JSON.parse(localStorage.getItem('cognexia_templates')||'[]');}catch(e){return [];}}
-function saveTemplates(templates){localStorage.setItem('cognexia_templates',JSON.stringify(templates));}
-function openTemplateModal(prefillContent){
-  const templates=getTemplates();
-  const list=document.getElementById('templateList');
-  if(templates.length===0){
-    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted)">No templates yet. Save a memory as template from the edit modal.</div>';
-  }else{
-    list.innerHTML=templates.map((t,i)=>'<div class="template-item" data-index="'+i+'" onclick="selectTemplate('+i+')"><button class="t-delete" onclick="event.stopPropagation();deleteTemplate('+i+')">×</button><div class="t-name">'+escapeHtml(t.name)+'</div><div class="t-meta">'+t.type+' • '+t.importance+'/10</div><div class="t-preview">'+escapeHtml(t.content)+'</div></div>').join('');
-  }
-  selectedTemplate=null;
-  document.getElementById('useTemplateBtn').disabled=true;
-  document.getElementById('templateModal').classList.add('active');
-}
-function selectTemplate(index){
-  document.querySelectorAll('.template-item').forEach(el=>el.style.borderColor='');
-  const el=document.querySelector('.template-item[data-index="'+index+'"]');
-  if(el)el.style.borderColor='var(--accent)';
-  selectedTemplate=getTemplates()[index];
-  document.getElementById('useTemplateBtn').disabled=false;
-}
-function deleteTemplate(index){
-  if(!confirm('Delete this template?'))return;
-  const templates=getTemplates();
-  templates.splice(index,1);
-  saveTemplates(templates);
-  openTemplateModal();
-}
-function useSelectedTemplate(){
-  if(!selectedTemplate)return;
-  openMemoryModal();
-  document.getElementById('memoryContent').value=selectedTemplate.content;
-  document.getElementById('memoryType').value=selectedTemplate.type||'insight';
-  document.getElementById('memoryImportance').value=selectedTemplate.importance||5;
-  document.getElementById('importanceValue').textContent=selectedTemplate.importance||5;
-  document.getElementById('templateModal').classList.remove('active');
-}
-document.getElementById('useTemplateBtn').addEventListener('click',useSelectedTemplate);
-document.getElementById('cancelTemplateBtn').addEventListener('click',()=>document.getElementById('templateModal').classList.remove('active'));
-document.getElementById('closeTemplateModal').addEventListener('click',()=>document.getElementById('templateModal').classList.remove('active'));
-document.getElementById('templateModal').addEventListener('click',(e)=>{if(e.target===document.getElementById('templateModal'))document.getElementById('templateModal').classList.remove('active');});
-
-// Save as template from memory modal
-function addSaveAsTemplateButton(){
-  const footer=document.querySelector('#memoryModal .modal-footer');
-  if(!footer)return;
-  const btn=document.createElement('button');
-  btn.className='btn btn-sm';
-  btn.id='saveAsTemplateBtn';
-  btn.textContent='📋 Save as Template';
-  btn.style.marginRight='auto';
-  btn.onclick=()=>{
-    const content=document.getElementById('memoryContent').value.trim();
-    if(!content){showToast('Add content first','error');return;}
-    const name=prompt('Template name:');
-    if(!name)return;
-    const templates=getTemplates();
-    templates.push({name,content,type:document.getElementById('memoryType').value,importance:parseInt(document.getElementById('memoryImportance').value)});
-    saveTemplates(templates);
-    showToast('Template saved');
-  };
-  footer.insertBefore(btn,footer.firstChild);
-}
-addSaveAsTemplateButton();
-
-// Cmd+K shortcut
-document.addEventListener('keydown',(e)=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCommandPalette();}if((e.metaKey||e.ctrlKey)&&e.key===','){e.preventDefault();document.getElementById('settingsModal').classList.add('active');updateStorageDisplay();}});
-
-// Update clearAllData
-const oldClearAll=window.clearAllData;
-window.clearAllData=function(){if(confirm('This will delete ALL memories and templates. Are you sure?')){localStorage.removeItem('cognexia_templates');localStorage.removeItem('cognexia_recent_searches');localStorage.removeItem('cognexia_digest_dismissed');showToast('All data cleared');document.getElementById('settingsModal').classList.remove('active');location.reload();}};
-
-// =============================================
-// MARKDOWN EDITOR
-// =============================================
-let currentMarkdownMemoryId=null;
-let mdViewMode='split'; // 'edit', 'preview', 'split'
-
-function openMarkdownEditor(id){
-  currentMarkdownMemoryId=id;
-  const memory=allMemories.find(m=>m.id===id);
-  if(!memory)return;
-  
-  // Load full memory content from API
-  api('/memory/'+id+'?project='+currentProject).then(fullMemory=>{
-    document.getElementById('mdEditorContent').value=fullMemory.content||'';
-    document.getElementById('mdModalTitle').textContent='📝 Edit as Markdown - '+memory.content_type;
-    updateMarkdownPreview();
-    setMdView('split');
-    document.getElementById('markdownModal').classList.add('active');
-    document.getElementById('mdStatus').textContent='Editing memory: '+id.substring(0,8)+'...';
-  }).catch(err=>{
-    // Fallback to memory from list
-    document.getElementById('mdEditorContent').value=memory.content||'';
-    document.getElementById('mdModalTitle').textContent='📝 Edit as Markdown - '+memory.content_type;
-    updateMarkdownPreview();
-    setMdView('split');
-    document.getElementById('markdownModal').classList.add('active');
-    document.getElementById('mdStatus').textContent='Editing memory: '+id.substring(0,8)+'...';
-  });
-}
-
-function closeMarkdownModal(){
-  document.getElementById('markdownModal').classList.remove('active');
-  currentMarkdownMemoryId=null;
-  clearMdAutosave();
-}
-
-document.getElementById('closeMarkdownModal').addEventListener('click',closeMarkdownModal);
-document.getElementById('markdownModal').addEventListener('click',e=>{if(e.target===document.getElementById('markdownModal'))closeMarkdownModal()});
-
-function setMdView(mode){
-  mdViewMode=mode;
-  const editorPane=document.getElementById('mdEditorPane');
-  const previewPane=document.getElementById('mdPreviewPane');
-  const editBtn=document.getElementById('mdEditBtn');
-  const previewBtn=document.getElementById('mdPreviewBtn');
-  const splitBtn=document.getElementById('mdSplitBtn');
-  
-  // Reset active states
-  [editBtn,previewBtn,splitBtn].forEach(b=>b.classList.remove('active'));
-  
-  if(mode==='edit'){
-    editorPane.style.display='flex';
-    previewPane.style.display='none';
-    editBtn.classList.add('active');
-  } else if(mode==='preview'){
-    editorPane.style.display='none';
-    previewPane.style.display='block';
-    previewBtn.classList.add('active');
-    updateMarkdownPreview();
-  } else { // split
-    editorPane.style.display='flex';
-    previewPane.style.display='block';
-    splitBtn.classList.add('active');
-    updateMarkdownPreview();
-  }
-}
-
-function mdInsertText(before,after){
-  const textarea=document.getElementById('mdEditorContent');
-  const start=textarea.selectionStart;
-  const end=textarea.selectionEnd;
-  const text=textarea.value;
-  const selected=text.substring(start,end);
-  textarea.value=text.substring(0,start)+before+selected+after+text.substring(end);
-  textarea.selectionStart=start+before.length;
-  textarea.selectionEnd=start+before.length+selected.length;
-  textarea.focus();
-  triggerMdAutosave();
-}
-
-let mdAutosaveTimer=null;
-function clearMdAutosave(){if(mdAutosaveTimer){clearTimeout(mdAutosaveTimer);mdAutosaveTimer=null;}}
-function triggerMdAutosave(){
-  clearMdAutosave();
-  if(!currentMarkdownMemoryId)return;
-  document.getElementById('mdStatus').textContent='Autosaving...';
-  mdAutosaveTimer=setTimeout(()=>{
-    saveMarkdownMemory(true);
-  },2000);
-}
-
-function updateMarkdownPreview(){
-  const content=document.getElementById('mdEditorContent').value;
-  const preview=document.getElementById('mdPreviewContent');
-  preview.innerHTML=renderMarkdown(content);
-}
-
-document.getElementById('mdEditorContent').addEventListener('input',()=>{
-  triggerMdAutosave();
-  if(mdViewMode==='preview'||mdViewMode==='split'){
-    updateMarkdownPreview();
-  }
-});
-
-async function saveMarkdownMemory(silent=false){
-  if(!currentMarkdownMemoryId)return;
-  clearMdAutosave();
-  const content=document.getElementById('mdEditorContent').value;
-  
-  try{
-    await api('/memory/'+currentMarkdownMemoryId+'?project='+currentProject,{
-      method:'PATCH',
-      body:JSON.stringify({content:content})
-    });
-    
-    // Update local cache
-    const memoryIdx=allMemories.findIndex(m=>m.id===currentMarkdownMemoryId);
-    if(memoryIdx!==-1){
-      allMemories[memoryIdx].content=content;
-    }
-    
-    if(!silent)showToast('Memory saved as Markdown');
-    closeMarkdownModal();
-    loadView();
-  } catch(err){
-    if(!silent)showToast(err.message,'error');
-    else document.getElementById('mdStatus').textContent='Save failed';
-  }
-}
-
-function renderMarkdown(text){
-  if(!text)return'<p style="color:var(--text-muted)">Nothing to preview</p>';
-  
-  // Escape HTML first
-  let html=escapeHtml(text);
-  
-  // Code blocks (must be before inline code)
-  html=html.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre style="background:var(--bg-primary);padding:12px;border-radius:6px;overflow-x:auto"><code>$2</code></pre>');
-  
-  // Inline code
-  html=html.replace(/`([^`]+)`/g,'<code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:0.9em">$1</code>');
-  
-  // Headers
-  html=html.replace(/^### (.+)$/gm,'<h3 style="font-size:1.2rem;font-weight:600;margin:16px 0 8px 0;color:var(--text-primary)">$1</h3>');
-  html=html.replace(/^## (.+)$/gm,'<h2 style="font-size:1.4rem;font-weight:600;margin:20px 0 10px 0;color:var(--text-primary)">$1</h2>');
-  html=html.replace(/^# (.+)$/gm,'<h1 style="font-size:1.6rem;font-weight:700;margin:24px 0 12px 0;color:var(--text-primary)">$1</h1>');
-  
-  // Bold and italic
-  html=html.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
-  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
-  html=html.replace(/___(.+?)___/g,'<strong><em>$1</em></strong>');
-  html=html.replace(/__(.+?)__/g,'<strong>$1</strong>');
-  html=html.replace(/_(.+?)_/g,'<em>$1</em>');
-  
-  // Links
-  html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" style="color:var(--accent);text-decoration:none" target="_blank">$1</a>');
-  
-  // Blockquotes
-  html=html.replace(/^> (.+)$/gm,'<blockquote style="border-left:3px solid var(--accent);padding-left:12px;margin:12px 0;color:var(--text-secondary);font-style:italic">$1</blockquote>');
-  
-  // Horizontal rules
-  html=html.replace(/^---$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">');
-  
-  // Unordered lists
-  html=html.replace(/^[\-\*] (.+)$/gm,'<li style="margin-left:20px">$1</li>');
-  html=html.replace(/(<li[^>]*>[\s\S]*?<\/li>(\n|$))+/g,'<ul style="margin:8px 0">$&</ul>');
-  
-  // Ordered lists
-  html=html.replace(/^\d+\. (.+)$/gm,'<li style="margin-left:20px">$1</li>');
-  
-  // Paragraphs - wrap remaining text blocks
-  const lines=html.split('\n\n');
-  html=lines.map(line=>{
-    line=line.trim();
-    if(!line)return'';
-    if(line.startsWith('<')||line.startsWith('http'))return line;
-    return'<p style="margin:8px 0;line-height:1.6">'+line.replace(/\n/g,'<br>')+'</p>';
-  }).join('\n');
-  
-  // Clean up multiple br's within paragraphs
-  html=html.replace(/<\/p>\n<br>/g,'</p>\n');
-  
-  return html;
-}
-
-// Keyboard shortcuts in markdown modal
-document.getElementById('mdEditorContent').addEventListener('keydown',e=>{
-  if(e.key==='s'&&(e.metaKey||e.ctrlKey)){
-    e.preventDefault();
-    saveMarkdownMemory();
-  }
-  if(e.key==='Escape'){
-    closeMarkdownModal();
-  }
-  // Tab handling
-  if(e.key==='Tab'){
-    e.preventDefault();
-    const textarea=e.target;
-    const start=textarea.selectionStart;
-    const end=textarea.selectionEnd;
-    textarea.value=textarea.value.substring(0,start)+'  '+textarea.value.substring(end);
-    textarea.selectionStart=textarea.selectionEnd=start+2;
-  }
-});
-
+const API='http://localhost:10000/api';
+let currentProject='general',allProjects=[],allMemories=[],currentView='timeline',searchTimeout=null,isDragging=false,dragStart=null,offset={x:0,y:0},scale=1;
+async function req(method,path,body){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);const res=await fetch(API+path,opts);const json=await res.json();if(!json.success)throw new Error(json.error||'Request failed');return json.data}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;setTimeout(()=>t.className='toast',2500)}
+async function loadProjects(){try{const data=await req('GET','/projects');allProjects=data.projects||[];renderSidebar();populateProjectSelect()}catch(e){showToast('Cannot connect to Cognexia','error')}}
+async function getProjectCount(project){try{const data=await req('GET',`/memory/query?q=a&project=${project}&limit=200`);return data.count||0}catch{return 0}}
+async function renderSidebar(){const list=document.getElementById('projectList');const counts=await Promise.all(allProjects.map(p=>getProjectCount(p)));list.innerHTML=allProjects.map((p,i)=>`<div class="project-item ${p===currentProject?'active':''}" onclick="selectProject('${p}')"><span class="project-name">${p}</span><span class="project-count">${counts[i]}</span></div>`).join('')}
+function populateProjectSelect(){const sel=document.getElementById('memProject');sel.innerHTML=allProjects.map(p=>`<option value="${p}" ${p===currentProject?'selected':''}>${p}</option>`).join('')}
+function selectProject(p){currentProject=p;renderSidebar();loadView()}
+async function loadMemories(){try{const data=await req('GET',`/memory/query?q=a&project=${currentProject}&limit=200`);allMemories=data.results||[]}catch{allMemories=[]}}
+async function loadView(){const main=document.getElementById('mainContent');main.innerHTML='<div class="loading"><div class="spinner"></div> Loading...</div>';await loadMemories();if(currentView==='timeline')renderTimeline();else renderGraph()}
+function setView(v){currentView=v;document.getElementById('viewTimeline').classList.toggle('active',v==='timeline');document.getElementById('viewGraph').classList.toggle('active',v==='graph');loadView()}
+function typeDotClass(imp){if(imp>=9)return'critical';if(imp>=7)return'high';return''}
+function formatDate(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+function renderMemoryCard(m){const dotClass=typeDotClass(m.importance);return`<div class="memory-card" data-id="${m.id}"><div class="memory-card-top"><span class="type-badge type-${m.content_type}">${m.content_type}</span><div class="importance-dot"><div class="dot ${dotClass}"></div>${m.importance}/10</div></div><div class="memory-content">${escHtml(m.content)}</div><div class="memory-footer"><span class="memory-meta">${formatDate(m.created_at)}</span><div class="memory-actions"><button class="icon-btn" onclick="openEditModal('${m.id}')">Edit</button><button class="icon-btn del" onclick="deleteMemory('${m.id}')">Delete</button></div></div></div>`}
+function renderTimeline(){const main=document.getElementById('mainContent');const typeFilter=document.getElementById('typeFilter')?document.getElementById('typeFilter').value:'all';const sortFilter=document.getElementById('sortFilter')?document.getElementById('sortFilter').value:'newest';let memories=[...allMemories];if(typeFilter!=='all')memories=memories.filter(m=>m.content_type===typeFilter);if(sortFilter==='newest')memories.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));else if(sortFilter==='oldest')memories.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));else if(sortFilter==='importance')memories.sort((a,b)=>b.importance-a.importance);const counts={total:allMemories.length,insight:allMemories.filter(m=>m.content_type==='insight').length,goal:allMemories.filter(m=>m.content_type==='goal').length,milestone:allMemories.filter(m=>m.content_type==='milestone').length};let html=`<div class="stats-row"><div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${counts.total}</div></div><div class="stat-card"><div class="stat-label">Insights</div><div class="stat-value">${counts.insight}</div></div><div class="stat-card"><div class="stat-label">Goals</div><div class="stat-value">${counts.goal}</div></div><div class="stat-card"><div class="stat-label">Milestones</div><div class="stat-value">${counts.milestone}</div></div></div><div class="toolbar"><select class="filter-select" id="typeFilter" onchange="renderTimeline()"><option value="all">All types</option><option value="insight">Insight</option><option value="goal">Goal</option><option value="milestone">Milestone</option><option value="preference">Preference</option><option value="error">Error</option><option value="security">Security</option></select><select class="filter-select" id="sortFilter" onchange="renderTimeline()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="importance">By importance</option></select></div>`;if(memories.length===0){html+=`<div class="empty-state"><h3>No memories yet</h3><p>Add your first memory using the button above.</p></div>`}else{html+=`<div class="memories-grid">${memories.map(renderMemoryCard).join('')}</div>`}main.innerHTML=html;if(typeFilter!=='all')document.getElementById('typeFilter').value=typeFilter;if(sortFilter!=='newest')document.getElementById('sortFilter').value=sortFilter}
+function renderGraph(){const main=document.getElementById('mainContent');main.innerHTML=`<div class="graph-container"><canvas id="graphCanvas" height="520"></canvas></div>`;const canvas=document.getElementById('graphCanvas');canvas.width=canvas.offsetWidth;const ctx=canvas.getContext('2d');const typeColors={insight:'#6366f1',goal:'#f59e0b',milestone:'#22c55e',preference:'#06b6d4',error:'#ef4444',security:'#f97316'};const nodes=allMemories.map((m,i)=>{const angle=(i/allMemories.length)*Math.PI*2;const r=160+Math.random()*80;return{id:m.id,x:canvas.width/2+Math.cos(angle)*r,y:260+Math.sin(angle)*r,r:6+m.importance*1.2,color:typeColors[m.content_type]||'#888',label:m.content.substring(0,30)+(m.content.length>30?'...':''),memory:m}});let hovered=null;function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.translate(offset.x,offset.y);ctx.scale(scale,scale);nodes.forEach(n=>{nodes.forEach(n2=>{if(n.id>=n2.id)return;if(n.memory.content_type===n2.memory.content_type){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(n2.x,n2.y);ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;ctx.stroke()}})});nodes.forEach(n=>{ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=n===hovered?'#fff':n.color;ctx.globalAlpha=n===hovered?1:0.8;ctx.fill();ctx.globalAlpha=1;if(n===hovered){ctx.font='11px -apple-system,sans-serif';ctx.fillStyle='#e8e8e8';ctx.fillText(n.label,n.x+n.r+6,n.y+4)}});ctx.restore()}draw();canvas.addEventListener('mousemove',e=>{const rect=canvas.getBoundingClientRect();const mx=(e.clientX-rect.left-offset.x)/scale;const my=(e.clientY-rect.top-offset.y)/scale;const prev=hovered;hovered=nodes.find(n=>Math.hypot(n.x-mx,n.y-my)<n.r+4)||null;if(hovered!==prev)draw();if(isDragging){offset.x=e.clientX-rect.left-dragStart.x;offset.y=e.clientY-rect.top-dragStart.y;draw()}});canvas.addEventListener('mousedown',e=>{const rect=canvas.getBoundingClientRect();isDragging=true;dragStart={x:e.clientX-rect.left-offset.x,y:e.clientY-rect.top-offset.y}});canvas.addEventListener('mouseup',()=>isDragging=false);canvas.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(0.3,Math.min(3,scale*(e.deltaY<0?1.1:0.9)));draw()})}
+function openAddModal(){document.getElementById('modalTitle').textContent='New Memory';document.getElementById('editId').value='';document.getElementById('memContent').value='';document.getElementById('memType').value='insight';document.getElementById('memImportance').value=7;document.getElementById('importanceDisplay').textContent='7';document.getElementById('memProject').value=currentProject;document.getElementById('modalOverlay').classList.remove('hidden');document.getElementById('memContent').focus()}
+function openEditModal(id){const m=allMemories.find(m=>m.id===id);if(!m)return;document.getElementById('modalTitle').textContent='Edit Memory';document.getElementById('editId').value=id;document.getElementById('memContent').value=m.content;document.getElementById('memType').value=m.content_type;document.getElementById('memImportance').value=m.importance;document.getElementById('importanceDisplay').textContent=m.importance;document.getElementById('memProject').value=m.project||currentProject;document.getElementById('modalOverlay').classList.remove('hidden')}
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden')}
+async function saveMemory(){const content=document.getElementById('memContent').value.trim();if(!content){showToast('Content cannot be empty','error');return}const editId=document.getElementById('editId').value;const body={content,type:document.getElementById('memType').value,project:document.getElementById('memProject').value,importance:parseInt(document.getElementById('memImportance').value),agentId:'thoth'};try{if(editId){await req('PATCH',`/memory/${editId}?project=${body.project}`,body);showToast('Memory updated','success')}else{await req('POST','/memory/store',body);showToast('Memory saved','success')}closeModal();renderSidebar();loadView()}catch(e){showToast(e.message,'error')}}
+async function deleteMemory(id){if(!confirm('Delete this memory?'))return;const m=allMemories.find(m=>m.id===id);const project=m?(m.project||currentProject):currentProject;try{await req('DELETE',`/memory/${id}?project=${project}`);showToast('Memory deleted','success');renderSidebar();loadView()}catch(e){showToast(e.message,'error')}}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+document.getElementById('searchInput').addEventListener('input',function(){clearTimeout(searchTimeout);const q=this.value.trim();if(!q){loadView();return}searchTimeout=setTimeout(()=>performSearch(q),300)});
+async function performSearch(q){const main=document.getElementById('mainContent');main.innerHTML='<div class="loading"><div class="spinner"></div> Searching...</div>';try{const data=await req('GET',`/memory/query?q=${encodeURIComponent(q)}&project=${currentProject}&limit=50`);const results=data.results||[];if(results.length===0){main.innerHTML=`<div class="empty-state"><h3>No results for "${escHtml(q)}"</h3></div>`;return}main.innerHTML=`<div class="section-heading">${results.length} result${results.length!==1?'s':''} for "${escHtml(q)}"</div><div class="memories-grid">${results.map(renderMemoryCard).join('')}</div>`}catch(e){showToast(e.message,'error');loadView()}}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();document.getElementById('searchInput').value='';loadView()}if(e.key==='n'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')openAddModal()});
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('modalOverlay'))closeModal()});
+loadProjects().then(()=>loadView());
 </script>
-
-  <!-- Command Palette -->
-  <div class="command-palette-overlay" id="commandPalette">
-    <div class="command-palette">
-      <div class="command-palette-input-wrap">
-        <span class="cmd-icon">⌘</span>
-        <input type="text" class="command-palette-input" id="commandInput" placeholder="Type a command...">
-      </div>
-      <div class="command-palette-results" id="commandResults"></div>
-      <div class="command-palette-footer">
-        <span><kbd>↑↓</kbd> navigate</span>
-        <span><kbd>Enter</kbd> select</span>
-        <span><kbd>Esc</kbd> close</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Templates Modal -->
-  <div class="modal-overlay" id="templateModal">
-    <div class="modal">
-      <div class="modal-header"><h3>Templates</h3><button class="modal-close" id="closeTemplateModal">×</button></div>
-      <div class="modal-body">
-        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">Save content as a reusable template, or select one to pre-fill a new memory.</p>
-        <div class="template-list" id="templateList"></div>
-      </div>
-      <div class="modal-footer center">
-        <button class="btn btn-primary" id="useTemplateBtn" disabled>Use Template</button>
-        <button class="btn" id="cancelTemplateBtn">Cancel</button>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
