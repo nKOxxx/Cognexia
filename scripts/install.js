@@ -178,7 +178,9 @@ await autoStore(userMessage, agentResponse);
   console.log('  3. See example: cat .cognexia/example.js');
 }
 
-main().catch(err => {
+try {
+  main();
+} catch (err) {
   console.error('Error:', err.message);
   process.exit(1);
-});
+}
