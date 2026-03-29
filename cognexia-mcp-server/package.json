@@ -1,0 +1,42 @@
+{
+  "name": "cognexia-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Cognexia — gives Claude Code read-only access to Cognexia memories",
+  "main": "dist/index.js",
+  "bin": {
+    "cognexia-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "watch": "tsc --watch",
+    "test": "jest"
+  },
+  "keywords": [
+    "mcp",
+    "cognexia",
+    "memory",
+    "claude",
+    "ai-agent"
+  ],
+  "author": "Ares",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.18.2",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
