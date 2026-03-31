@@ -1,13 +1,15 @@
 {
   "name": "cognexia",
-  "version": "2.3.0",
-  "description": "Long-term memory for AI agents — persistent, searchable, project-isolated memory stored locally via SQLite.",
+  "version": "1.0.0",
+  "description": "The missing memory layer for AI agents — persistent, searchable, project-isolated memory with encrypted local storage, Electron desktop app, Obsidian integration, and folder sync.",
   "main": "electron/main.js",
   "bin": {
     "cognexia": "./cli.js"
   },
   "scripts": {
     "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
     "start": "node server.js",
     "start:electron": "electron .",
     "build:electron": "electron-builder",
@@ -46,7 +48,7 @@
   "build": {
     "appId": "com.cognexia.app",
     "productName": "Cognexia",
-    "copyright": "Copyright © 2024 Ares",
+    "copyright": "Copyright © 2026 Ares",
     "directories": {
       "output": "dist",
       "buildResources": "build"

@@ -85,6 +85,20 @@ function rateLimitMiddleware(req, res, next) {
 }
 
 // ============================================
+// REQUEST LOGGING
+// ============================================
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const level = res.statusCode >= 500 ? 'ERROR' : res.statusCode >= 400 ? 'WARN' : 'INFO';
+    console.log(`[Cognexia] ${level} ${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
+
+// ============================================
 // STANDARDIZED RESPONSE HELPERS
 // ============================================
 
@@ -1041,6 +1055,43 @@ app.get('/api/memory/all', async (req, res) => {
   }
 });
 
+// Search all projects — must be registered BEFORE /:id to avoid wildcard shadowing
+app.get('/api/memory/query-all', async (req, res) => {
+  try {
+    const { q, agentId, limit } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Query parameter "q" required' });
+    }
+
+    const projects = listProjects();
+    const allResults = [];
+
+    for (const project of projects) {
+      const results = await queryMemories({
+        query: q,
+        project,
+        agentId,
+        limit: parseInt(limit) || 3
+      });
+      allResults.push(...results.map(r => ({ ...r, project })));
+    }
+
+    // Sort by importance, then relevance
+    allResults.sort((a, b) => b.importance - a.importance);
+
+    res.json(successResponse({
+      query: q,
+      projectsSearched: projects,
+      count: allResults.length,
+      results: allResults.slice(0, parseInt(limit) || 10)
+    }));
+  } catch (err) {
+    console.error('[Query-All Error]', err);
+    res.status(500).json(errorResponse(err.message, 'QUERY_ALL_ERROR'));
+  }
+});
+
 // Get single memory by ID (reads from Markdown file if available)
 app.get('/api/memory/:id', async (req, res) => {
   try {
@@ -1419,41 +1470,10 @@ app.post('/api/memory/merge', async (req, res) => {
   }
 });
 
-// Query across ALL projects (cascading search)
-app.get('/api/memory/query-all', async (req, res) => {
-  try {
-    const { q, agentId, limit } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({ error: 'Query parameter "q" required' });
-    }
-    
-    const projects = listProjects();
-    const allResults = [];
-    
-    for (const project of projects) {
-      const results = await queryMemories({
-        query: q,
-        project,
-        agentId,
-        limit: parseInt(limit) || 3
-      });
-      allResults.push(...results.map(r => ({ ...r, project })));
-    }
-    
-    // Sort by importance, then relevance
-    allResults.sort((a, b) => b.importance - a.importance);
-    
-    res.json(successResponse({
-      query: q,
-      projectsSearched: projects,
-      count: allResults.length,
-      results: allResults.slice(0, parseInt(limit) || 10)
-    }));
-  } catch (err) {
-    console.error('[Query-All Error]', err);
-    res.status(500).json(errorResponse(err.message, 'QUERY_ALL_ERROR'));
-  }
+// query-all moved above /:id — see line ~1058
+app.get('/api/memory/_query-all-placeholder', async (req, res) => {
+  // This route is intentionally unreachable; query-all is registered above /:id
+  res.status(404).end();
 });
 
 // ============================================
@@ -3049,7 +3069,7 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('╔════════════════════════════════════════════════════════╗');
   console.log('║     Cognexia 🧠 — Data Lake Edition v2.3.0                ║');
   console.log('╠════════════════════════════════════════════════════════╣');
@@ -3127,4 +3147,17 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Cognexia] Next maintenance: ${nextMaintenance.toLocaleString()}`);
 });
 
-module.exports = { app, getProjectDbPath, listProjects };
+// ============================================
+// GLOBAL ERROR HANDLER
+// ============================================
+
+// Catches any unhandled errors thrown in route handlers
+// Must be defined after all routes (4 arguments = error handler)
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error('[Cognexia] Unhandled error:', err.stack || err.message || err);
+  if (res.headersSent) return next(err);
+  res.status(500).json(errorResponse('An unexpected error occurred. Please try again.', 'INTERNAL_ERROR'));
+});
+
+// Export server instance and helpers for testing
+module.exports = { server, app, getProjectDbPath, listProjects };
