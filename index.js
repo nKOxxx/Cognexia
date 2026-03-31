@@ -4,7 +4,6 @@
  */
 
 const sqlite3 = require('sqlite3').verbose();
-const { createClient } = require('@supabase/supabase-js');
 const nlp = require('compromise');
 const path = require('path');
 const fs = require('fs');
@@ -130,6 +129,14 @@ class Cognexia {
   initSupabase(url, key) {
     if (!url || !key) {
       throw new Error('Supabase URL and key required');
+    }
+    let createClient;
+    try {
+      createClient = require('@supabase/supabase-js').createClient;
+    } catch {
+      throw new Error(
+        'Supabase storage requires @supabase/supabase-js: npm install @supabase/supabase-js'
+      );
     }
     this.supabase = createClient(url, key);
   }
