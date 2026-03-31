@@ -9,6 +9,14 @@
 
 ---
 
+## Screenshots
+
+![Timeline view — memory cards with type badges and importance scores](assets/screenshot-timeline.png)
+
+![Graph view — force-directed visualization with type legend and node labels](assets/screenshot-graph.png)
+
+---
+
 ## Why Cognexia
 
 Every AI conversation starts from scratch. Context windows fill up. Previous work disappears.
