@@ -113,12 +113,20 @@ curl http://localhost:10000/api/health
 
 ### Windows (without WSL)
 
-```bash
-# Use npm directly instead of start.sh
-npm start
+```powershell
+# Using the PowerShell launcher (recommended)
+.\start.ps1 start
+.\start.ps1 stop
+.\start.ps1 status
 
-# Or run the Electron app
-npm run start:electron
+# If script execution is blocked, run once to allow it:
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Or run directly with npm:
+
+```bash
+npm start
 ```
 
 ---
@@ -126,9 +134,15 @@ npm run start:electron
 ## Server Management
 
 ```bash
+# macOS / Linux
 ./start.sh start    # Start server (background, port 10000)
 ./start.sh stop     # Stop server
 ./start.sh status   # Check if running
+
+# Windows (PowerShell)
+.\start.ps1 start
+.\start.ps1 stop
+.\start.ps1 status
 ```
 
 **Custom port:**

@@ -43,6 +43,7 @@
     "import-export.js",
     "agent-collaboration.js",
     "start.sh",
+    "start.ps1",
     "public/",
     "electron/",
     "LICENSE",
