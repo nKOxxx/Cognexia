@@ -176,7 +176,8 @@ Open **http://localhost:10000** to access the memory browser:
 
 - **Projects sidebar** — isolated memory spaces per project, with memory counts. Click `+` to create a new project.
 - **Timeline view** — all memories in a card grid, sortable by date, type, or importance. Filter by memory type using the dropdown.
-- **Graph view** — visual force-directed map of memories, connected by type. Drag to pan, scroll to zoom.
+- **Graph view** — canvas-based memory map, color-coded by type with node labels. Drag to pan, scroll to zoom. Click any node to see full content.
+- **Full graph page** — open **http://localhost:10000/graph** for the D3 force-directed graph with clusters, auto-linking, relationship paths, and statistics.
 - **Search** — full-text search across the current project with 300ms debounce.
 - **Add / Edit / Delete** — full memory management with type, importance (1–10), and project assignment.
 - **Memory types** — `insight`, `goal`, `milestone`, `preference`, `error`, `security`, `decision`, `conversation`
