@@ -32,6 +32,21 @@
   ],
   "author": "Ares",
   "license": "MIT",
+  "files": [
+    "index.js",
+    "server.js",
+    "cli.js",
+    "crypto.js",
+    "memory-graph.js",
+    "memory-templates.js",
+    "import-export.js",
+    "agent-collaboration.js",
+    "start.sh",
+    "public/",
+    "electron/",
+    "LICENSE",
+    "README.md"
+  ],
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "compromise": "^14.10.0",
