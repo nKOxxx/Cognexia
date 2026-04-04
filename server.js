@@ -15,6 +15,9 @@ const os = require('os');
 // Crypto module for blind indexing (optional encryption)
 const cognexiaCrypto = require('./crypto');
 
+// Agent profiles module
+const agentProfiles = require('./agent-profiles');
+
 // File upload for import
 const multer = require('multer');
 
@@ -2876,6 +2879,81 @@ app.use((err, req, res, next) => {
   res.status(500).json(errorResponse('Internal server error', 'INTERNAL_ERROR'));
 });
 
+// ─── Agent Profiles (/api/profiles/*) ────────────────────────────────────────
+// Separate namespace from /api/agents (agent collaboration) to avoid shadowing.
+// Teams and specific sub-paths registered before /:id.
+
+app.get('/api/profiles/teams', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.listTeams() }); }
+  catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.post('/api/profiles/teams', async (req, res) => {
+  try { res.status(201).json({ success: true, data: await agentProfiles.createTeam(req.body) }); }
+  catch (err) { res.status(err.message.includes('required') ? 400 : 500).json({ success: false, error: err.message }); }
+});
+
+app.patch('/api/profiles/teams/:id', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.updateTeam(req.params.id, req.body) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.delete('/api/profiles/teams/:id', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.deleteTeam(req.params.id) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.post('/api/profiles/assign', async (req, res) => {
+  try {
+    const { agentId, projectName } = req.body;
+    if (!agentId || !projectName) return res.status(400).json({ success: false, error: 'agentId and projectName required' });
+    res.json({ success: true, data: await agentProfiles.assignToProject(agentId, projectName) });
+  } catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.delete('/api/profiles/assign', async (req, res) => {
+  try {
+    const { agentId, projectName } = req.body;
+    if (!agentId || !projectName) return res.status(400).json({ success: false, error: 'agentId and projectName required' });
+    res.json({ success: true, data: await agentProfiles.removeFromProject(agentId, projectName) });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.get('/api/profiles/project/:project', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.getProjectAgents(req.params.project) }); }
+  catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.get('/api/profiles', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.listAgents(req.query.team || null) }); }
+  catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+app.post('/api/profiles', async (req, res) => {
+  try { res.status(201).json({ success: true, data: await agentProfiles.createAgent(req.body) }); }
+  catch (err) { res.status(err.message.includes('required') || err.message.includes('not found') ? 400 : 500).json({ success: false, error: err.message }); }
+});
+
+app.get('/api/profiles/:id/briefing', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.getAgentBriefing(req.params.id) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.get('/api/profiles/:id', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.getAgent(req.params.id) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.patch('/api/profiles/:id', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.updateAgent(req.params.id, req.body) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
+app.delete('/api/profiles/:id', async (req, res) => {
+  try { res.json({ success: true, data: await agentProfiles.deleteAgent(req.params.id) }); }
+  catch (err) { res.status(err.message.includes('not found') ? 404 : 500).json({ success: false, error: err.message }); }
+});
+
 // 404 handler - API routes not found
 app.use('/api/*', (req, res) => {
   res.status(404).json(errorResponse('Not found', 'NOT_FOUND'));
@@ -3063,7 +3141,148 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// Web UI fallback - serve index.html for non-API routes
+// ─── (dead block removed — agent profile routes moved to /api/profiles/* above) ───
+// Teams
+app.get('/api/agents/teams-old-unused', async (req, res) => {
+  try {
+    const teams = await agentProfiles.listTeams();
+    res.json({ success: true, data: teams });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/agents/teams', async (req, res) => {
+  try {
+    const { name, description, color } = req.body;
+    const team = await agentProfiles.createTeam({ name, description, color });
+    res.status(201).json({ success: true, data: team });
+  } catch (err) {
+    const status = err.message.includes('required') ? 400 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.patch('/api/agents/teams/:id', async (req, res) => {
+  try {
+    const team = await agentProfiles.updateTeam(req.params.id, req.body);
+    res.json({ success: true, data: team });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/agents/teams/:id', async (req, res) => {
+  try {
+    const result = await agentProfiles.deleteTeam(req.params.id);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+// Project assignment (before /:id)
+app.post('/api/agents/assign', async (req, res) => {
+  try {
+    const { agentId, projectName } = req.body;
+    if (!agentId || !projectName) return res.status(400).json({ success: false, error: 'agentId and projectName required' });
+    const result = await agentProfiles.assignToProject(agentId, projectName);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/agents/assign', async (req, res) => {
+  try {
+    const { agentId, projectName } = req.body;
+    if (!agentId || !projectName) return res.status(400).json({ success: false, error: 'agentId and projectName required' });
+    const result = await agentProfiles.removeFromProject(agentId, projectName);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/agents/project/:project', async (req, res) => {
+  try {
+    const agents = await agentProfiles.getProjectAgents(req.params.project);
+    res.json({ success: true, data: agents });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Agents CRUD
+app.get('/api/agents', async (req, res) => {
+  try {
+    const agents = await agentProfiles.listAgents(req.query.team || null);
+    res.json({ success: true, data: agents });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/agents', async (req, res) => {
+  try {
+    const agent = await agentProfiles.createAgent(req.body);
+    res.status(201).json({ success: true, data: agent });
+  } catch (err) {
+    const status = err.message.includes('required') || err.message.includes('not found') ? 400 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+// Briefing before /:id so it doesn't get swallowed as an id
+app.get('/api/agents/:id/briefing', async (req, res) => {
+  try {
+    const briefing = await agentProfiles.getAgentBriefing(req.params.id);
+    res.json({ success: true, data: briefing });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/agents/:id', async (req, res) => {
+  try {
+    const agent = await agentProfiles.getAgent(req.params.id);
+    res.json({ success: true, data: agent });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.patch('/api/agents/:id', async (req, res) => {
+  try {
+    const agent = await agentProfiles.updateAgent(req.params.id, req.body);
+    res.json({ success: true, data: agent });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/agents/:id', async (req, res) => {
+  try {
+    const result = await agentProfiles.deleteAgent(req.params.id);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const status = err.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ success: false, error: err.message });
+  }
+});
+
+// Web UI — named pages
+app.get('/agents', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'agents.html'));
+});
+
+// Fallback — index.html for all other non-API routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

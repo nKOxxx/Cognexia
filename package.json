@@ -42,6 +42,7 @@
     "memory-templates.js",
     "import-export.js",
     "agent-collaboration.js",
+    "agent-profiles.js",
     "start.sh",
     "start.ps1",
     "public/",

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognexia — Agent Profiles</title>
+<style>
+:root{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#e8e8e8;--text2:#bbbbd0;--text3:#666;--accent:#6366f1;--accent2:#818cf8;--danger:#ef4444;--success:#22c55e;--r:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;font-size:14px;overflow:hidden}
+header{display:flex;align-items:center;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;gap:14px}
+.logo{font-size:16px;font-weight:600;color:var(--text)}.logo span{color:#818cf8}
+.header-sep{width:1px;height:18px;background:var(--border2)}
+.header-title{font-size:13px;color:var(--text3);font-weight:500}
+.back-link{margin-left:auto;color:var(--text3);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:5px;transition:color 0.15s}
+.back-link:hover{color:var(--text2)}
+.layout{display:flex;flex:1;overflow:hidden}
+/* Sidebar */
+.sidebar{width:252px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-top{padding:14px 14px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.sidebar-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--text3)}
+.btn-new-team{background:none;border:1px solid var(--border2);color:var(--text3);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;line-height:1}
+.btn-new-team:hover{color:var(--accent2);border-color:var(--accent);background:rgba(99,102,241,0.1)}
+.teams-scroll{flex:1;overflow-y:auto;padding:6px}
+/* Team */
+.team-block{margin-bottom:2px}
+.team-row{display:flex;align-items:center;gap:7px;padding:7px 8px;cursor:pointer;border-radius:6px;transition:background 0.1s;user-select:none}
+.team-row:hover{background:var(--bg3)}
+.team-row.sel{background:rgba(99,102,241,0.13)}
+.team-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.team-name-text{font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-cnt{font-size:11px;color:var(--text3);flex-shrink:0}
+.team-chev{font-size:9px;color:var(--text3);transition:transform 0.15s;flex-shrink:0}
+.team-chev.open{transform:rotate(90deg)}
+.agents-list{padding-left:14px}
+/* Agent row */
+.agent-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;transition:background 0.1s}
+.agent-row:hover{background:var(--bg3)}
+.agent-row.sel{background:rgba(99,102,241,0.18)}
+.agent-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.agent-row-info{flex:1;min-width:0}
+.agent-row-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-row-role{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add-agent-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;cursor:pointer;color:var(--text3);font-size:11px;transition:all 0.1s;background:none;border:none;width:100%;text-align:left;margin-top:1px}
+.add-agent-row:hover{color:var(--accent2);background:rgba(99,102,241,0.08)}
+/* Main */
+.main{flex:1;overflow-y:auto;padding:32px 36px}
+.empty-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text3);text-align:center}
+.empty-hero h2{font-size:18px;color:var(--text2);font-weight:600}
+.empty-hero p{font-size:13px;line-height:1.6}
+/* Form */
+.form-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px}
+.ff{display:flex;flex-direction:column;gap:5px}
+.ff.full{grid-column:1/-1}
+.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3)}
+.fl-hint{font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);opacity:0.7}
+.fi{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:var(--r);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s;width:100%}
+.fi:focus{border-color:var(--accent)}
+textarea.fi{resize:vertical;min-height:78px;line-height:1.55}
+select.fi{cursor:pointer}
+select.fi option{background:var(--bg3)}
+/* Tag input */
+.tags-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:5px 7px;display:flex;flex-wrap:wrap;gap:4px;min-height:40px;cursor:text;transition:border-color 0.15s}
+.tags-wrap:focus-within{border-color:var(--accent)}
+.tag{display:flex;align-items:center;gap:3px;background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.35);color:var(--accent2);border-radius:4px;padding:2px 7px;font-size:11px;white-space:nowrap}
+.tag-x{cursor:pointer;color:var(--text3);font-size:13px;line-height:1;padding:0 1px}
+.tag-x:hover{color:var(--danger)}
+.tag-inp{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:inherit;min-width:90px;flex:1;padding:2px 3px}
+.tag-inp::placeholder{color:var(--text3);opacity:.6}
+/* Colors */
+.color-row{display:flex;gap:7px;flex-wrap:wrap;padding:4px 0}
+.cswatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s}
+.cswatch.sel{border-color:#fff;transform:scale(1.2)}
+/* Buttons */
+.btn{padding:8px 18px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}.btn-secondary:hover{border-color:var(--accent);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid rgba(239,68,68,0.28)}.btn-danger:hover{background:rgba(239,68,68,0.22)}
+.btn-ghost{background:none;border:1px solid var(--border2);color:var(--text3)}.btn-ghost:hover{color:var(--text2)}
+.form-actions{display:flex;gap:9px;margin-top:26px;max-width:700px;flex-wrap:wrap}
+/* Divider section */
+.fsect{margin-top:22px;padding-top:22px;border-top:1px solid var(--border);max-width:700px}
+.fsect-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);margin-bottom:14px}
+/* Briefing box */
+.briefing-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-size:12px;font-family:'SF Mono','Fira Code',monospace;white-space:pre-wrap;color:var(--text2);max-height:300px;overflow-y:auto;line-height:1.65}
+/* Agent grid in team view */
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;max-width:700px}
+.agent-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color 0.15s}
+.agent-card:hover{border-color:var(--border2)}
+.agent-card-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;margin-bottom:10px}
+.agent-card-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.agent-card-role{font-size:11px;color:var(--text3);line-height:1.4}
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 16px;border-radius:var(--r);font-size:13px;opacity:0;transform:translateY(6px);transition:all 0.2s;pointer-events:none;z-index:200}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.error{border-color:rgba(239,68,68,0.5);color:#f87171}
+.toast.success{border-color:rgba(34,197,94,0.4);color:#4ade80}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Cogn<span>exia</span></div>
+  <div class="header-sep"></div>
+  <span class="header-title">Agent Profiles</span>
+  <a href="/" class="back-link">← Memory Browser</a>
+</header>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <span class="sidebar-label">Teams</span>
+      <button class="btn-new-team" title="New team" onclick="newTeam()">+</button>
+    </div>
+    <div class="teams-scroll" id="teamsList"></div>
+  </div>
+  <div class="main" id="mainPanel">
+    <div class="empty-hero">
+      <div style="font-size:44px">🤖</div>
+      <h2>Agent Profiles</h2>
+      <p>Create teams and build agent profiles with skills,<br>experience, tools, and tasks.<br><br>Profiles are project-independent — they carry<br>into every new project fresh.</p>
+      <button class="btn btn-primary" style="margin-top:18px" onclick="newTeam()">Create First Team</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS=['#6366f1','#f59e0b','#22c55e','#ef4444','#06b6d4','#a855f7','#f97316','#ec4899','#84cc16','#64748b'];
+let S={teams:[],openTeams:{},selTeam:null,selAgent:null,mode:null};
+
+async function api(method,path,body){
+  const o={method,headers:{'Content-Type':'application/json'}};
+  if(body)o.body=JSON.stringify(body);
+  const r=await fetch('/api'+path,o);
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||d.message||'Request failed');
+  return d.data!==undefined?d.data:d;
+}
+
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className=`toast show ${type}`;
+  setTimeout(()=>el.className='toast',2600);
+}
+
+async function load(){
+  try{S.teams=await api('GET','/profiles/teams');render();}
+  catch(e){toast(e.message,'error');}
+}
+
+function render(){
+  const list=document.getElementById('teamsList');
+  if(!S.teams.length){
+    list.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">No teams yet.<br>Click + to create one.</div>`;
+    return;
+  }
+  list.innerHTML=S.teams.map(t=>{
+    const open=!!S.openTeams[t.id];
+    const tsel=S.selTeam===t.id&&S.mode==='team';
+    return `<div class="team-block">
+      <div class="team-row${tsel?' sel':''}" onclick="clickTeam('${t.id}')">
+        <span class="team-dot" style="background:${t.color}"></span>
+        <span class="team-name-text">${esc(t.name)}</span>
+        <span class="team-cnt">${t.agents.length}</span>
+        <span class="team-chev${open?' open':''}">▶</span>
+      </div>
+      ${open?`<div class="agents-list">
+        ${t.agents.map(a=>`
+          <div class="agent-row${S.selAgent===a.id?' sel':''}" onclick="clickAgent('${a.id}')">
+            <div class="agent-av" style="background:${t.color}">${esc(a.name[0].toUpperCase())}</div>
+            <div class="agent-row-info">
+              <div class="agent-row-name">${esc(a.name)}</div>
+              <div class="agent-row-role">${esc(a.role||'No role')}</div>
+            </div>
+          </div>`).join('')}
+        <button class="add-agent-row" onclick="newAgent('${t.id}')">+ Add agent</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function clickTeam(id){
+  if(S.openTeams[id]&&S.selTeam===id&&S.mode==='team'){
+    // already showing team form — toggle close
+    delete S.openTeams[id];S.selTeam=null;S.mode=null;render();showEmpty();return;
+  }
+  S.openTeams[id]=true;S.selTeam=id;S.selAgent=null;S.mode='team';
+  render();showTeamForm(id);
+}
+
+function clickAgent(id){
+  S.selAgent=id;S.selTeam=null;S.mode='agent';render();showAgentForm(id);
+}
+
+function newTeam(){S.selTeam=null;S.selAgent=null;S.mode='new-team';render();showNewTeamForm();}
+function newAgent(tid){S.selAgent=null;S.selTeam=tid;S.mode='new-agent';render();showNewAgentForm(tid);}
+
+// ── team forms ────────────────────────────────────────────────────────────────
+function colorSwatches(selected){
+  return COLORS.map(c=>`<div class="cswatch${c===selected?' sel':''}" style="background:${c}" data-c="${c}" onclick="pickColor(this)"></div>`).join('');
+}
+function pickColor(el){document.querySelectorAll('.cswatch').forEach(s=>s.classList.remove('sel'));el.classList.add('sel');}
+function getColor(){return document.querySelector('.cswatch.sel')?.dataset.c||COLORS[0];}
+
+function showNewTeamForm(){
+  document.getElementById('mainPanel').innerHTML=`
+    <div class="form-title">🏢 New Team</div>
+    <div class="form-grid">
+      <div class="ff"><label class="fl">Team Name *</label><input class="fi" id="tf-name" placeholder="e.g. Go to Market" autofocus></div>
+      <div class="ff"><label class="fl">Color</label><div class="color-row">${colorSwatches(COLORS[0])}</div></div>
+      <div class="ff full"><label class="fl">Description</label><input class="fi" id="tf-desc" placeholder="Team focus and purpose"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveNewTeam()">Create Team</button>
+      <button class="btn btn-ghost" onclick="cancel()">Cancel</button>
+    </div>`;
+  document.getElementById('tf-name').addEventListener('keydown',e=>{if(e.key==='Enter')saveNewTeam();});
+}
+
+function showTeamForm(id){
+  const t=S.teams.find(x=>x.id===id);if(!t)return;
+  document.getElementById('mainPanel').innerHTML=`
+    <div class="form-title"><span style="color:${t.color}">●</span> ${esc(t.name)}</div>
+    <div class="form-grid">
+      <div class="ff"><label class="fl">Team Name *</label><input class="fi" id="tf-name" value="${esc(t.name)}"></div>
+      <div class="ff"><label class="fl">Color</label><div class="color-row">${colorSwatches(t.color)}</div></div>
+      <div class="ff full"><label class="fl">Description</label><input class="fi" id="tf-desc" value="${esc(t.description||'')}"></div>
+    </div>
+    <div class="fsect">
+      <div class="fsect-title">Agents (${t.agents.length})</div>
+      ${t.agents.length?`<div class="agents-grid">${t.agents.map(a=>`
+        <div class="agent-card" onclick="clickAgent('${a.id}')">
+          <div class="agent-card-av" style="background:${t.color}">${esc(a.name[0].toUpperCase())}</div>
+          <div class="agent-card-name">${esc(a.name)}</div>
+          <div class="agent-card-role">${esc(a.role||'No role defined')}</div>
+        </div>`).join('')}</div><br>`:'<p style="color:var(--text3);font-size:13px;margin-bottom:14px">No agents yet.</p>'}
+      <button class="btn btn-secondary" onclick="newAgent('${t.id}')">+ Add Agent</button>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveTeam('${t.id}')">Save</button>
+      <button class="btn btn-danger" onclick="deleteTeam('${t.id}')">Delete Team</button>
+    </div>`;
+}
+
+async function saveNewTeam(){
+  const name=document.getElementById('tf-name').value.trim();
+  if(!name){toast('Team name required','error');return;}
+  try{
+    await api('POST','/profiles/teams',{name,color:getColor(),description:document.getElementById('tf-desc').value.trim()});
+    await load();toast('Team created');cancel();
+  }catch(e){toast(e.message,'error');}
+}
+
+async function saveTeam(id){
+  const name=document.getElementById('tf-name').value.trim();
+  if(!name){toast('Team name required','error');return;}
+  try{
+    await api('PATCH',`/profiles/teams/${id}`,{name,color:getColor(),description:document.getElementById('tf-desc').value.trim()});
+    await load();toast('Saved');showTeamForm(id);
+  }catch(e){toast(e.message,'error');}
+}
+
+async function deleteTeam(id){
+  if(!confirm('Delete this team? Agents will become unassigned.'))return;
+  try{await api('DELETE',`/profiles/teams/${id}`);await load();toast('Deleted');cancel();}
+  catch(e){toast(e.message,'error');}
+}
+
+// ── agent forms ───────────────────────────────────────────────────────────────
+function tagHtml(id,vals,ph){
+  return `<div class="tags-wrap" id="${id}-w" onclick="document.getElementById('${id}-i').focus()">
+    ${vals.map(v=>`<span class="tag">${esc(v)}<span class="tag-x" onclick="rmTag('${id}','${esc(v)}')">×</span></span>`).join('')}
+    <input class="tag-inp" id="${id}-i" placeholder="${ph}" onkeydown="tagKey(event,'${id}')">
+  </div>`;
+}
+
+function tagKey(e,id){
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const inp=document.getElementById(id+'-i');
+    const v=inp.value.trim().replace(/,$/,'');
+    if(v){addTag(id,v);inp.value='';}
+  }else if(e.key==='Backspace'&&!e.target.value){
+    const tags=document.getElementById(id+'-w').querySelectorAll('.tag');
+    if(tags.length)rmTag(id,tags[tags.length-1].childNodes[0].textContent.trim());
+  }
+}
+
+function getTags(id){return[...document.getElementById(id+'-w').querySelectorAll('.tag')].map(t=>t.childNodes[0].textContent.trim());}
+
+function addTag(id,v){
+  if(getTags(id).includes(v))return;
+  const w=document.getElementById(id+'-w'),inp=document.getElementById(id+'-i');
+  const el=document.createElement('span');
+  el.className='tag';
+  el.innerHTML=`${esc(v)}<span class="tag-x" onclick="rmTag('${id}','${esc(v)}')">×</span>`;
+  w.insertBefore(el,inp);
+}
+
+function rmTag(id,v){
+  document.getElementById(id+'-w').querySelectorAll('.tag').forEach(t=>{if(t.childNodes[0].textContent.trim()===v)t.remove();});
+}
+
+function agentFormHtml(agent,tid){
+  const isNew=!agent;
+  const a=agent||{name:'',role:'',team_id:tid||'',model:'',skills:[],tools:[],tasks:[],experience:'',personality:'',notes:''};
+  const teamOpts=S.teams.map(t=>`<option value="${t.id}"${t.id===(a.team_id||tid)?'selected':''}>${esc(t.name)}</option>`).join('');
+  const teamColor=S.teams.find(t=>t.id===(a.team_id||tid))?.color||'#6366f1';
+  return `
+    <div class="form-title">
+      ${isNew?'🤖 New Agent':`<div style="width:30px;height:30px;border-radius:50%;background:${teamColor};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff">${esc((a.name||'?')[0].toUpperCase())}</div>${esc(a.name)}`}
+    </div>
+    <div class="form-grid">
+      <div class="ff"><label class="fl">Name *</label><input class="fi" id="af-name" value="${esc(a.name)}" placeholder="e.g. Market Analyst"${isNew?' autofocus':''}></div>
+      <div class="ff"><label class="fl">Role</label><input class="fi" id="af-role" value="${esc(a.role)}" placeholder="e.g. Lead Generator"></div>
+      <div class="ff"><label class="fl">Team</label><select class="fi" id="af-team"><option value="">No team</option>${teamOpts}</select></div>
+      <div class="ff"><label class="fl">Preferred Model</label><input class="fi" id="af-model" value="${esc(a.model)}" placeholder="e.g. claude-opus-4-6"></div>
+      <div class="ff full"><label class="fl">Skills <span class="fl-hint">(Enter to add)</span></label>${tagHtml('af-skills',a.skills,'e.g. Market research, Copywriting...')}</div>
+      <div class="ff full"><label class="fl">Tools <span class="fl-hint">(Enter to add)</span></label>${tagHtml('af-tools',a.tools,'e.g. Web search, Code interpreter...')}</div>
+      <div class="ff full"><label class="fl">Core Tasks <span class="fl-hint">(Enter to add)</span></label>${tagHtml('af-tasks',a.tasks,'e.g. Qualify leads, Write reports...')}</div>
+      <div class="ff full"><label class="fl">Experience / Background</label><textarea class="fi" id="af-exp" rows="3" placeholder="Domain expertise, background, years of experience...">${esc(a.experience)}</textarea></div>
+      <div class="ff full"><label class="fl">Communication Style / Personality</label><textarea class="fi" id="af-pers" rows="3" placeholder="Tone, approach, how this agent communicates...">${esc(a.personality)}</textarea></div>
+      <div class="ff full"><label class="fl">Notes</label><textarea class="fi" id="af-notes" rows="2" placeholder="Additional constraints, special instructions...">${esc(a.notes)}</textarea></div>
+    </div>`;
+}
+
+function agentPayload(){
+  return{
+    name:document.getElementById('af-name').value.trim(),
+    role:document.getElementById('af-role').value.trim(),
+    team_id:document.getElementById('af-team').value||null,
+    model:document.getElementById('af-model').value.trim(),
+    skills:getTags('af-skills'),tools:getTags('af-tools'),tasks:getTags('af-tasks'),
+    experience:document.getElementById('af-exp').value.trim(),
+    personality:document.getElementById('af-pers').value.trim(),
+    notes:document.getElementById('af-notes').value.trim(),
+  };
+}
+
+function showNewAgentForm(tid){
+  document.getElementById('mainPanel').innerHTML=`
+    ${agentFormHtml(null,tid)}
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveNewAgent()">Create Agent</button>
+      <button class="btn btn-ghost" onclick="cancel()">Cancel</button>
+    </div>`;
+}
+
+function showAgentForm(id){
+  const a=S.teams.flatMap(t=>t.agents).find(x=>x.id===id);
+  if(!a)return;
+  document.getElementById('mainPanel').innerHTML=`
+    ${agentFormHtml(a,a.team_id)}
+    <div class="fsect">
+      <div class="fsect-title">Base Profile Briefing</div>
+      <p style="color:var(--text3);font-size:12px;margin-bottom:12px">This is what gets injected when this agent starts a new project — no project memories included.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-secondary" onclick="loadBriefing('${id}')">Preview</button>
+        <button class="btn btn-secondary" onclick="copyBriefing('${id}')">Copy to Clipboard</button>
+      </div>
+      <div id="briefing-box"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveAgent('${id}')">Save Changes</button>
+      <button class="btn btn-danger" onclick="delAgent('${id}')">Delete Agent</button>
+    </div>`;
+}
+
+async function saveNewAgent(){
+  const p=agentPayload();
+  if(!p.name){toast('Agent name required','error');return;}
+  try{
+    const agent=await api('POST','/profiles',p);
+    await load();
+    if(agent.team_id){S.openTeams[agent.team_id]=true;}
+    S.selAgent=agent.id;S.mode='agent';render();showAgentForm(agent.id);
+    toast('Agent created');
+  }catch(e){toast(e.message,'error');}
+}
+
+async function saveAgent(id){
+  const p=agentPayload();
+  if(!p.name){toast('Agent name required','error');return;}
+  try{
+    await api('PATCH',`/profiles/${id}`,p);
+    await load();render();showAgentForm(id);toast('Saved');
+  }catch(e){toast(e.message,'error');}
+}
+
+async function delAgent(id){
+  if(!confirm('Delete this agent?'))return;
+  try{
+    await api('DELETE',`/profiles/${id}`);
+    await load();S.selAgent=null;S.mode=null;render();showEmpty();toast('Deleted');
+  }catch(e){toast(e.message,'error');}
+}
+
+async function loadBriefing(id){
+  try{
+    const d=await api('GET',`/profiles/${id}/briefing`);
+    document.getElementById('briefing-box').innerHTML=`<div class="briefing-box">${esc(d.markdown)}</div>`;
+  }catch(e){toast(e.message,'error');}
+}
+
+async function copyBriefing(id){
+  try{
+    const d=await api('GET',`/profiles/${id}/briefing`);
+    await navigator.clipboard.writeText(d.markdown);toast('Copied to clipboard');
+  }catch(e){toast(e.message,'error');}
+}
+
+function cancel(){S.selTeam=null;S.selAgent=null;S.mode=null;render();showEmpty();}
+
+function showEmpty(){
+  document.getElementById('mainPanel').innerHTML=`
+    <div class="empty-hero">
+      <div style="font-size:44px">🤖</div>
+      <h2>Agent Profiles</h2>
+      <p>Select a team or agent, or create a new one.</p>
+      <button class="btn btn-primary" style="margin-top:18px" onclick="newTeam()">New Team</button>
+    </div>`;
+}
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+load();
+</script>
+</body>
+</html>
