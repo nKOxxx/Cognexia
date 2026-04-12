@@ -93,11 +93,14 @@ def api_client():
             )
             return resp.json()
 
-        def query(self, project, keywords, **kwargs):
+        def query(self, project, keywords, filters=None, **kwargs):
             """Query memories by keywords."""
             # API uses GET with query parameters, keyword is 'q' (space-separated)
             query_str = " ".join(keywords) if isinstance(keywords, list) else keywords
             params = {"project": project, "q": query_str, **kwargs}
+            # Flatten filters dict into query parameters
+            if filters:
+                params.update(filters)
             resp = self.session.get(
                 f"{self.base_url}/api/memory/query",
                 params=params,

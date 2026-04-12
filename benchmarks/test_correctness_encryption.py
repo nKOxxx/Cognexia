@@ -68,9 +68,9 @@ class TestEncryptionRoundTrip:
 
         get_result = api_client.get_memory(test_project, store_result.get("data", {}).get("id"))
         data = get_result.get("data", {})
-        assert data.get("type") == metadata["type"]
+        assert data.get("content_type") == metadata["type"], f"Expected content_type={metadata['type']}, got {data.get('content_type')}"
         assert data.get("importance") == metadata["importance"]
-        assert data.get("agentId") == metadata["agentId"]
+        assert data.get("agent_id") == metadata["agentId"]
 
     def test_same_plaintext_different_ciphertexts(self, api_client, test_project, enable_encryption):
         """Two encryptions of the same text produce different ciphertexts (IVs)."""
@@ -79,13 +79,15 @@ class TestEncryptionRoundTrip:
         store1 = api_client.store(test_project, content)
         store2 = api_client.store(test_project, content)
 
-        assert store1["id"] != store2["id"]  # Different memory IDs
+        id1 = store1.get("data", {}).get("id")
+        id2 = store2.get("data", {}).get("id")
+        assert id1 != id2  # Different memory IDs
 
         # Both should decrypt to the same plaintext
-        get1 = api_client.get_memory(test_project, store1["id"])
-        get2 = api_client.get_memory(test_project, store2["id"])
+        get1 = api_client.get_memory(test_project, id1)
+        get2 = api_client.get_memory(test_project, id2)
 
-        assert get1["data"]["content"] == get2["data"]["content"] == content
+        assert get1.get("data", {}).get("content") == get2.get("data", {}).get("content") == content
 
     def test_encryption_without_enable_still_works(self, api_client, test_project):
         """Encryption is optional; unencrypted storage still works."""
