@@ -1897,11 +1897,15 @@ app.get('/api/graph/related/:memoryId', async (req, res) => {
 app.post('/api/graph/link', async (req, res) => {
   try {
     const { sourceId, targetId, linkType, strength, project } = req.body;
-    
+
     if (!sourceId || !targetId) {
       return res.status(400).json(errorResponse('sourceId and targetId required'));
     }
-    
+
+    if (sourceId === targetId) {
+      return res.status(400).json(errorResponse('Cannot relate a memory to itself'));
+    }
+
     const db = await getDb(project || 'general');
     await memoryGraph.initGraphSchema(db);
     
